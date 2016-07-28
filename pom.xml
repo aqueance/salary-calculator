@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.fluidity</groupId>
+    <artifactId>wages</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Wage Calculator Applications</name>
+
+    <prerequisites>
+        <maven>3.1.0</maven>
+    </prerequisites>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <fluid.tools.version>1.0.0-SNAPSHOT</fluid.tools.version>
+    </properties>
+
+    <!-- Allows specifying the target repository as -DaltDeploymentRepository (http://maven.apache.org/plugins/maven-deploy-plugin/deploy-mojo.html)
+        <distributionManagement>
+            <repository>
+                <id>dummy</id>
+                <name>Dummy</name>
+                <url>dummy</url>
+            </repository>
+        </distributionManagement>
+    -->
+
+    <build>
+        <defaultGoal>package</defaultGoal>
+
+        <pluginManagement>
+            <plugins>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.1</version>
+
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
+                        <encoding>UTF-8</encoding>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>2.6</version>
+
+                    <configuration>
+                        <encoding>UTF-8</encoding>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.17</version>
+
+                    <configuration>
+                        <useFile>false</useFile>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.4</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.fluidity.platform</groupId>
+                    <artifactId>composition-maven-plugin</artifactId>
+                    <version>${fluid.tools.version}</version>
+
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>process-annotations</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.fluidity.platform</groupId>
+                    <artifactId>standalone-jar-maven-plugin</artifactId>
+                    <version>${fluid.tools.version}</version>
+
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>standalone</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+
+                    <configuration>
+                        <compact>true</compact>
+                    </configuration>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <modules>
+        <module>wage-calculator-api</module>
+        <module>wage-calculator-impl</module>
+    </modules>
+</project>
