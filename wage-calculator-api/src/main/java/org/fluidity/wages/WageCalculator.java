@@ -1,13 +1,14 @@
 package org.fluidity.wages;
 
 import java.util.List;
+import java.util.function.Function;
 
 import org.fluidity.foundation.Configuration;
 
 /**
  * Computes wages from a list of shift details.
  */
-public interface WageCalculator {
+public interface WageCalculator extends Function<List<ShiftDetails>, List<WageDetails>> {
 
     /**
      * TODO
@@ -16,7 +17,7 @@ public interface WageCalculator {
      *
      * @return TODO.
      */
-    List<WageDetails> calculate(final List<ShiftDetails> shifts);
+    List<WageDetails> apply(List<ShiftDetails> shifts);
 
     /**
      * TODO

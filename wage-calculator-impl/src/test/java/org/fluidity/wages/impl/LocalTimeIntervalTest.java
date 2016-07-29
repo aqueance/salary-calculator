@@ -7,14 +7,9 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
-import org.fluidity.wages.impl.LocalTimeInterval;
-
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * TODO: javadoc...
- */
 public class LocalTimeIntervalTest {
 
     @Test
@@ -22,8 +17,8 @@ public class LocalTimeIntervalTest {
         final ZoneId timeZone = ZoneId.systemDefault();
         final LocalDate date = LocalDate.now();
 
-        final LocalTimeInterval _0_to_1 = new LocalTimeInterval(LocalTime.of(0, 0), LocalTime.of(1, 0));
-        final LocalTimeInterval _2_to_3 = new LocalTimeInterval(LocalTime.of(2, 0), LocalTime.of(3, 0));
+        final LocalTimeInterval _0_to_1 = LocalTimeInterval.of(LocalTime.of(0, 0), LocalTime.of(1, 0));
+        final LocalTimeInterval _2_to_3 = LocalTimeInterval.of(LocalTime.of(2, 0), LocalTime.of(3, 0));
 
         final Duration overlap1 = _0_to_1.overlap(_2_to_3, date, timeZone);
         final Duration overlap2 = _2_to_3.overlap(_0_to_1, date, timeZone);
@@ -39,8 +34,8 @@ public class LocalTimeIntervalTest {
         final ZoneId timeZone = ZoneId.systemDefault();
         final LocalDate date = LocalDate.now();
 
-        final LocalTimeInterval _0_to_2 = new LocalTimeInterval(LocalTime.of(0, 0), LocalTime.of(2, 0));
-        final LocalTimeInterval _1_to_3 = new LocalTimeInterval(LocalTime.of(1, 0), LocalTime.of(3, 0));
+        final LocalTimeInterval _0_to_2 = LocalTimeInterval.of(LocalTime.of(0, 0), LocalTime.of(2, 0));
+        final LocalTimeInterval _1_to_3 = LocalTimeInterval.of(LocalTime.of(1, 0), LocalTime.of(3, 0));
 
         final Duration overlap1 = _0_to_2.overlap(_1_to_3, date, timeZone);
         final Duration overlap2 = _1_to_3.overlap(_0_to_2, date, timeZone);
@@ -56,8 +51,8 @@ public class LocalTimeIntervalTest {
         final ZoneId timeZone = ZoneId.systemDefault();
         final LocalDate date = LocalDate.now();
 
-        final LocalTimeInterval _0_to_3 = new LocalTimeInterval(LocalTime.of(0, 0), LocalTime.of(3, 0));
-        final LocalTimeInterval _1_to_2 = new LocalTimeInterval(LocalTime.of(1, 0), LocalTime.of(2, 0));
+        final LocalTimeInterval _0_to_3 = LocalTimeInterval.of(LocalTime.of(0, 0), LocalTime.of(3, 0));
+        final LocalTimeInterval _1_to_2 = LocalTimeInterval.of(LocalTime.of(1, 0), LocalTime.of(2, 0));
 
         final Duration overlap1 = _0_to_3.overlap(_1_to_2, date, timeZone);
         final Duration overlap2 = _1_to_2.overlap(_0_to_3, date, timeZone);
@@ -73,8 +68,8 @@ public class LocalTimeIntervalTest {
         final ZoneId timeZone = ZoneId.of("Europe/Helsinki");
         final LocalDate date = LocalDate.of(2016, Month.MARCH, 27);
 
-        final LocalTimeInterval _1_to_4 = new LocalTimeInterval(LocalTime.of(1, 0), LocalTime.of(4, 0));
-        final LocalTimeInterval _2_to_5 = new LocalTimeInterval(LocalTime.of(2, 0), LocalTime.of(5, 0));
+        final LocalTimeInterval _1_to_4 = LocalTimeInterval.of(LocalTime.of(1, 0), LocalTime.of(4, 0));
+        final LocalTimeInterval _2_to_5 = LocalTimeInterval.of(LocalTime.of(2, 0), LocalTime.of(5, 0));
 
         final Duration overlap1 = _1_to_4.overlap(_2_to_5, date, timeZone);
         final Duration overlap2 = _2_to_5.overlap(_1_to_4, date, timeZone);
@@ -90,8 +85,8 @@ public class LocalTimeIntervalTest {
         final ZoneId timeZone = ZoneId.of("Europe/Helsinki");
         final LocalDate date = LocalDate.of(2016, Month.OCTOBER, 30);
 
-        final LocalTimeInterval _1_to_3 = new LocalTimeInterval(LocalTime.of(1, 0), LocalTime.of(3, 0));
-        final LocalTimeInterval _2_to_5 = new LocalTimeInterval(LocalTime.of(2, 0), LocalTime.of(5, 0));
+        final LocalTimeInterval _1_to_3 = LocalTimeInterval.of(LocalTime.of(1, 0), LocalTime.of(3, 0));
+        final LocalTimeInterval _2_to_5 = LocalTimeInterval.of(LocalTime.of(2, 0), LocalTime.of(5, 0));
 
         final Duration overlap1 = _1_to_3.overlap(_2_to_5, date, timeZone);
         final Duration overlap2 = _2_to_5.overlap(_1_to_3, date, timeZone);
