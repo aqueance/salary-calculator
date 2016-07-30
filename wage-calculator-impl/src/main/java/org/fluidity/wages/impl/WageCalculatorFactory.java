@@ -2,13 +2,12 @@ package org.fluidity.wages.impl;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.fluidity.composition.Component;
 import org.fluidity.wages.ShiftDetails;
@@ -16,32 +15,46 @@ import org.fluidity.wages.WageCalculator;
 import org.fluidity.wages.WageDetails;
 
 @Component
-final class WageCalculatorImpl implements WageCalculator {
+final class WageCalculatorFactory implements WageCalculator.Factory {
 
     private final ZoneId timeZone;
-    private final RegularRatePeriod[] regularRates;
-    private final OvertimeRate[] overtimeRates;
+    private final List<RegularRatePeriod> regularRates;
+    private final List<WageCalculator.Settings.OvertimeRate> overtimeRates;
 
-    WageCalculatorImpl(final WageCalculatorSettings settings) {
+    WageCalculatorFactory(final WageCalculatorSettings settings) {
         this.timeZone = settings.timeZone();
-        this.regularRates = settings.regularRates();
-        this.overtimeRates = settings.overtimeRates();
+        this.regularRates = Arrays.asList(settings.regularRates());
+        this.overtimeRates = Arrays.asList(settings.overtimeRates());
     }
 
     @Override
-    public List<WageDetails> apply(final List<ShiftDetails> shifts) {
-        final ShiftStreamProcessor processor = new ShiftStreamProcessor();
-
-        shifts.stream()
-                .map(this::shift)
-                .sorted()
-                .forEach(processor::accept);
-
-        return processor.get();
+    public WageCalculator create(final Consumer<WageDetails> consumer) {
+        return new WageCalculatorPipeline(consumer);
     }
 
-    private Shift shift(final ShiftDetails details) {
-        return new Shift(details, timeZone);
+    /**
+     * Implements the wage calculator as a pipeline of auto-closeable consumers. The {@link AutoCloseable#close()} method flushes the pipeline.
+     */
+    private final class WageCalculatorPipeline implements WageCalculator {
+
+        private final Consumer<WageDetails> consumer;
+        private final Collection<Shift> shifts = new TreeSet<>();
+
+        private WageCalculatorPipeline(final Consumer<WageDetails> consumer) {
+            this.consumer = consumer;
+        }
+
+        @Override
+        public void close() {
+            try (final ShiftStreamProcessor processor = new ShiftStreamProcessor(consumer)) {
+                shifts.forEach(processor);
+            }
+        }
+
+        @Override
+        public void accept(final ShiftDetails details) {
+            shifts.add(new Shift(details, timeZone));
+        }
     }
 
     /**
@@ -53,47 +66,47 @@ final class WageCalculatorImpl implements WageCalculator {
      * A sorted stream allows maintaining a single wage object at a time
      * rather than using a map to maintain all of them at the same time.
      */
-    private final class ShiftStreamProcessor implements Supplier<List<WageDetails>> {
+    private final class ShiftStreamProcessor implements Consumer<Shift>, AutoCloseable {
 
-        private final List<WageDetails> wages = new ArrayList<>();
+        private final Consumer<WageDetails> consumer;
 
         private DailyWageTracker tracker = null;
 
+        private ShiftStreamProcessor(final Consumer<WageDetails> consumer) {
+            this.consumer = consumer;
+        }
+
         /**
          * Receives a work shift stream, one object at a time.
-         * <p>
-         * Once all shift objects have been processed, the {@link #get get()} method
-         * must be invoked.
          *
          * @param shift the work shift details to process.
          */
-        void accept(final Shift shift) {
+        public void accept(final Shift shift) {
             final String personId = shift.personId;
             final LocalDate month = shift.month();
 
             if (tracker == null || !tracker.tracking(personId, month)) {
-                complete();
+                flush();
 
-                tracker = new DailyWageTracker(personId, month);
+                tracker = new DailyWageTracker(personId, shift.personName, month, consumer);
             }
 
             tracker.accept(shift);
         }
 
         /**
-         * Completes and collects the currently tracked salary.
+         * Completes and flushes the currently tracked salary.
          */
-        private void complete() {
+        private void flush() {
             if (tracker != null) {
-                wages.add(tracker.get());
+                tracker.close();
+                tracker =  null;
             }
         }
 
         @Override
-        public List<WageDetails> get() {
-            complete();
-
-            return wages;
+        public void close() {
+            flush();
         }
     }
 
@@ -140,13 +153,15 @@ final class WageCalculatorImpl implements WageCalculator {
      * Instances of this class track the hourly rates of person during the day, including regular / evening rates and overtime rates. This is done by accepting
      * a list of work shift details sorted by date and producing the monthly wage when done.
      */
-    private final class DailyWageTracker implements Consumer<Shift>, Supplier<WageDetails> {
+    private final class DailyWageTracker implements Consumer<Shift>, AutoCloseable {
 
         private final String personId;
+        private final String personName;
         private final LocalDate month;
 
-        private final ShiftSegment[] shiftSegments = Stream.of(regularRates).map(ShiftSegment::new).toArray(ShiftSegment[]::new);
+        private final ShiftSegment[] shiftSegments = regularRates.stream().map(ShiftSegment::new).toArray(ShiftSegment[]::new);
         private final MonthlyWage calculator = new MonthlyWage(this::addSalary);
+        private final Consumer<WageDetails> consumer;
 
         // the day being processed
         private LocalDate currentDate = null;
@@ -157,12 +172,16 @@ final class WageCalculatorImpl implements WageCalculator {
         /**
          * Creates a new instance for the given person in the given month.
          *
-         * @param personId the person ID.
-         * @param month    the month.
+         * @param personId   the person ID.
+         * @param personName the person's name.
+         * @param month      the month.
+         * @param consumer   the consumer to send {@link WageDetails} objects to.
          */
-        DailyWageTracker(final String personId, final LocalDate month) {
+        DailyWageTracker(final String personId, final String personName, final LocalDate month, final Consumer<WageDetails> consumer) {
             this.personId = personId;
+            this.personName = personName;
             this.month = month;
+            this.consumer = consumer;
         }
 
         /**
@@ -228,17 +247,12 @@ final class WageCalculatorImpl implements WageCalculator {
             }
         }
 
-        /**
-         * Produces the monthly wage details for the tracked person in the tracked month.
-         *
-         * @return a new object; never <code>null</code>.
-         */
         @Override
-        public WageDetails get() {
+        public void close() {
             assert currentDate != null : personId;
             calculator.accept(shiftSegments);
 
-            return new WageDetails(personId, month, Math.round((float) wageBy6000 / (float) 60));
+            consumer.accept(new WageDetails(personId, personName, month, Math.round((float) wageBy6000 / (float) 60)));
         }
     }
 
@@ -274,10 +288,10 @@ final class WageCalculatorImpl implements WageCalculator {
          * @param segments the array of shift segments.
          */
         public void accept(final ShiftSegment[] segments) {
-            final Iterator<OvertimeRate> overtimeRates = Arrays.asList(WageCalculatorImpl.this.overtimeRates).iterator();
+            final Iterator<WageCalculator.Settings.OvertimeRate> overtimeRates = WageCalculatorFactory.this.overtimeRates.iterator();
 
             // the most recent overtime rate; null means no (more) overtime level
-            OvertimeRate overtimeLevel = overtimeRates.hasNext() ? overtimeRates.next() : null;
+            WageCalculator.Settings.OvertimeRate overtimeLevel = overtimeRates.hasNext() ? overtimeRates.next() : null;
 
             // the threshold for the next overtime rate: 0 means no (more) overtime level
             int overtimeThreshold = overtimeLevel == null ? 0 : overtimeLevel.thresholdMinutes();

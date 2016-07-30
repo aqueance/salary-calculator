@@ -11,39 +11,40 @@ import org.fluidity.foundation.Lists;
 import org.fluidity.wages.WageCalculator;
 
 /**
- * TODO: javadoc...
+ * Turns the settings in a {@link WageCalculator.Settings} object into a format that is directly palatable to the {@link
+ * org.fluidity.wages.impl.WageCalculatorFactory.WageCalculatorPipeline}.
  */
 @Component
 final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
 
     private final ZoneId timeZone;
     private final RegularRatePeriod[] regularRates;
-    private final WageCalculator.OvertimeRate[] overtimeRates;
+    private final WageCalculator.Settings.OvertimeRate[] overtimeRates;
 
     WageCalculatorSettingsImpl(final Configuration<WageCalculator.Settings> configuration) {
         final WageCalculator.Settings settings = configuration.settings();
 
         this.timeZone = ZoneId.of(settings.timeZone());
 
-        final List<WageCalculator.RegularRate> regularRates = settings.regularRates();
+        final List<WageCalculator.Settings.RegularRate> regularRates = settings.regularRates();
         this.regularRates = Lists.asArray(RegularRatePeriod.class, regularRatePeriods(regularRates));
 
-        final int highestRegularRate = regularRates.stream().mapToInt(WageCalculator.RegularRate::rateBy100).max().orElse(0);
+        final int highestRegularRate = regularRates.stream().mapToInt(WageCalculator.Settings.RegularRate::rateBy100).max().orElse(0);
 
-        final List<WageCalculator.OvertimeRate> overtimeRates = settings.overtimeRates();
+        final List<WageCalculator.Settings.OvertimeRate> overtimeRates = settings.overtimeRates();
         validateOvertimeRates(highestRegularRate, overtimeRates);
 
-        this.overtimeRates = Lists.asArray(WageCalculator.OvertimeRate.class, overtimeRates);
+        this.overtimeRates = Lists.asArray(WageCalculator.Settings.OvertimeRate.class, overtimeRates);
     }
 
-    private List<RegularRatePeriod> regularRatePeriods(List<WageCalculator.RegularRate> rates) {
+    private List<RegularRatePeriod> regularRatePeriods(List<WageCalculator.Settings.RegularRate> rates) {
         if (rates.isEmpty()) {
             throw new IllegalArgumentException("No regular rates specified");
         }
 
-        WageCalculator.RegularRate lastRate = rates.get(0);
+        WageCalculator.Settings.RegularRate lastRate = rates.get(0);
 
-        // make sure we the first period starts at midnight
+        // make sure the first period starts at midnight
         if (lastRate.fromMinute() > 0) {
             final int periodCount = rates.size();
 
@@ -64,7 +65,7 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
         final List<RegularRatePeriod> periods = new ArrayList<>(rates.size());
 
         for (int i = 1, ii = rates.size(); i < ii; i++) {
-            final WageCalculator.RegularRate nextRate = rates.get(i);
+            final WageCalculator.Settings.RegularRate nextRate = rates.get(i);
             periods.add(regularRatePeriod(lastRate, nextRate));
             lastRate = nextRate;
         }
@@ -76,21 +77,25 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
 
     /**
      * TODO
-     * @param lastRate    TODO
-     * @param rates       TODO
+     *
+     * @param lastRate TODO
+     * @param rates    TODO
+     *
      * @return TODO
      */
-    private int validateOvertimeRates(int lastRate, final List<WageCalculator.OvertimeRate> rates) {
+    private int validateOvertimeRates(int lastRate, final List<WageCalculator.Settings.OvertimeRate> rates) {
         int lastThreshold = 0;
 
-        for (final WageCalculator.OvertimeRate rate : rates) {
+        for (final WageCalculator.Settings.OvertimeRate rate : rates) {
             final int currentRate = rate.rateBy100();
             final int currentThreshold = rate.thresholdMinutes();
 
             if (currentRate < lastRate) {
                 throw new IllegalArgumentException(String.format("Overtime rate %d is less than previous rate %d", currentRate, lastRate));
             } else if (currentThreshold < lastThreshold) {
-                throw new IllegalArgumentException(String.format("Overtime threshold minutes %d is less than previous threshold %d", currentThreshold, lastThreshold));
+                throw new IllegalArgumentException(String.format("Overtime threshold minutes %d is less than previous threshold %d",
+                                                                 currentThreshold,
+                                                                 lastThreshold));
             }
 
             lastRate = currentRate;
@@ -99,8 +104,8 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
         return lastRate;
     }
 
-    private WageCalculator.RegularRate regularRateFromMidnight(final int rate) {
-        return new WageCalculator.RegularRate() {
+    private WageCalculator.Settings.RegularRate regularRateFromMidnight(final int rate) {
+        return new WageCalculator.Settings.RegularRate() {
 
             @Override
             public int rateBy100() {
@@ -114,7 +119,7 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
         };
     }
 
-    RegularRatePeriod regularRatePeriod(final WageCalculator.RegularRate currentRate, final WageCalculator.RegularRate nextRate) {
+    private RegularRatePeriod regularRatePeriod(final WageCalculator.Settings.RegularRate currentRate, final WageCalculator.Settings.RegularRate nextRate) {
         return new RegularRatePeriod(currentRate.rateBy100(), localTime(currentRate.fromMinute()), localTime(nextRate.fromMinute()));
     }
 
@@ -133,7 +138,7 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
     }
 
     @Override
-    public WageCalculator.OvertimeRate[] overtimeRates() {
+    public WageCalculator.Settings.OvertimeRate[] overtimeRates() {
         return overtimeRates;
     }
 }

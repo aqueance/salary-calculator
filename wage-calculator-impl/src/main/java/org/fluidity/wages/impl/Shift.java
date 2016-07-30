@@ -13,6 +13,7 @@ import org.fluidity.wages.ShiftDetails;
 final class Shift implements Comparable<Shift> {
 
     final String personId;
+    final String personName;
     final LocalDate date;
 
     private final ZonedDateTimeInterval interval;
@@ -25,19 +26,24 @@ final class Shift implements Comparable<Shift> {
      */
     Shift(final ShiftDetails details, final ZoneId timeZone) {
         this.personId = details.personId;
+        this.personName = details.personName;
         this.date = details.date;
         this.interval = LocalTimeInterval.of(details.begin, details.end).locate(details.date, timeZone);
     }
 
     @Override
     public int compareTo(final Shift that) {
-        int result = this.personId.compareTo(that.personId);
+        int result = this.personName.compareTo(that.personName);
 
         if (result == 0) {
-            result = this.date.compareTo(that.date);
+            result = this.personId.compareTo(that.personId);
 
             if (result == 0) {
-                result = this.start().compareTo(that.start());
+                result = this.date.compareTo(that.date);
+
+                if (result == 0) {
+                    result = this.start().compareTo(that.start());
+                }
             }
         }
 

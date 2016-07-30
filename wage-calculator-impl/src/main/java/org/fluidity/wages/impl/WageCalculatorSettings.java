@@ -7,7 +7,7 @@ import org.fluidity.wages.WageCalculator;
 /**
  * TODO: javadoc...
  */
-public interface WageCalculatorSettings {
+interface WageCalculatorSettings {
 
     /**
      * TODO
@@ -25,5 +25,5 @@ public interface WageCalculatorSettings {
      * TODO
      * @return
      */
-    WageCalculator.OvertimeRate[] overtimeRates();
+    WageCalculator.Settings.OvertimeRate[] overtimeRates();
 }

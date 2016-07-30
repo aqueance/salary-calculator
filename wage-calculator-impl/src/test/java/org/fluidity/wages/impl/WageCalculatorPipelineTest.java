@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Month;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -16,9 +17,9 @@ import org.fluidity.wages.WageDetails;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public final class WageCalculatorImplTest extends Simulator {
+public final class WageCalculatorPipelineTest extends Simulator {
 
-    private WageCalculatorSettings settings(final String timeZone, final List<RegularRatePeriod> regular, final List<WageCalculator.OvertimeRate> overtime) {
+    private WageCalculatorSettings settings(final String timeZone, final List<RegularRatePeriod> regular, final List<WageCalculator.Settings.OvertimeRate> overtime) {
         return new WageCalculatorSettings() {
             @Override
             public ZoneId timeZone() {
@@ -31,23 +32,28 @@ public final class WageCalculatorImplTest extends Simulator {
             }
 
             @Override
-            public WageCalculator.OvertimeRate[] overtimeRates() {
-                return overtime.toArray(new WageCalculator.OvertimeRate[overtime.size()]);
+            public WageCalculator.Settings.OvertimeRate[] overtimeRates() {
+                return overtime.toArray(new WageCalculator.Settings.OvertimeRate[overtime.size()]);
             }
         };
     }
 
     @Test
+    @SuppressWarnings({ "EmptyTryBlock", "unused" })
     public void acceptsEmptyList() throws Exception {
         final WageCalculatorSettings settings = settings("Europe/Helsinki",
                                                          Collections.singletonList(regularRate(100, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
                                                          Collections.emptyList());
 
-        final WageCalculator subject = new WageCalculatorImpl(settings);
+        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
+
+        final List<WageDetails> wages = new ArrayList<>();
 
         verify(() -> {
-            final List<WageDetails> wages = subject.apply(Collections.emptyList());
-            Assert.assertNotNull(wages);
+            try (final WageCalculator subject = factory.create(wages::add)) {
+                // empty
+            }
+
             Assert.assertTrue(wages.isEmpty());
         });
     }
@@ -69,6 +75,7 @@ public final class WageCalculatorImplTest extends Simulator {
                                                          Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                        regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
+                                                         // TODO: not used
                                                          // overtime compensation:
                                                          //  $2.00 from 4 hours
                                                          //  $3.00 from 6 hours
@@ -76,7 +83,9 @@ public final class WageCalculatorImplTest extends Simulator {
                                                                        overtimeRate(overtimeSchedule2Rate, 6 * 60))
         );
 
-        final WageCalculator subject = new WageCalculatorImpl(settings);
+        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
+
+        final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -84,14 +93,17 @@ public final class WageCalculatorImplTest extends Simulator {
 
         final List<ShiftDetails> shifts = Collections.singletonList(
                 new ShiftDetails(personId,
+                                 "John Doe",
                                  LocalDate.of(year, month, 1),
                                  LocalTime.of(12, 0),
                                  LocalTime.of(13, 0))
         );
 
         verify(() -> {
-            final List<WageDetails> wages = subject.apply(shifts);
-            Assert.assertNotNull(wages);
+            try (final WageCalculator subject = factory.create(wages::add)) {
+                shifts.forEach(subject);
+            }
+
             Assert.assertEquals(wages.size(), 1);
 
             final WageDetails details = wages.get(0);
@@ -109,8 +121,8 @@ public final class WageCalculatorImplTest extends Simulator {
         return new RegularRatePeriod(rate, begin, end);
     }
 
-    private static WageCalculator.OvertimeRate overtimeRate(final int rate, final int fromMinutes) {
-        return new WageCalculator.OvertimeRate() {
+    private static WageCalculator.Settings.OvertimeRate overtimeRate(final int rate, final int fromMinutes) {
+        return new WageCalculator.Settings.OvertimeRate() {
             @Override
             public int thresholdMinutes() {
                 return fromMinutes;
