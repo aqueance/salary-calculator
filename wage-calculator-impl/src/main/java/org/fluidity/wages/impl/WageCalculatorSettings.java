@@ -1,6 +1,7 @@
 package org.fluidity.wages.impl;
 
 import java.time.ZoneId;
+import java.util.List;
 
 import org.fluidity.wages.WageCalculator;
 
@@ -19,11 +20,11 @@ interface WageCalculatorSettings {
      * TODO
      * @return
      */
-    RegularRatePeriod[] regularRates();
+    List<RegularRatePeriod> regularRates();
 
     /**
      * TODO
      * @return
      */
-    WageCalculator.Settings.OvertimeRate[] overtimeRates();
+    List<WageCalculator.Settings.OvertimeRate> overtimeRates();
 }

@@ -7,19 +7,18 @@ import java.util.List;
 
 import org.fluidity.composition.Component;
 import org.fluidity.foundation.Configuration;
-import org.fluidity.foundation.Lists;
 import org.fluidity.wages.WageCalculator;
 
 /**
  * Turns the settings in a {@link WageCalculator.Settings} object into a format that is directly palatable to the {@link
- * org.fluidity.wages.impl.WageCalculatorFactory.WageCalculatorPipeline}.
+ * org.fluidity.wages.impl.WageCalculatorPipeline}.
  */
 @Component
 final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
 
     private final ZoneId timeZone;
-    private final RegularRatePeriod[] regularRates;
-    private final WageCalculator.Settings.OvertimeRate[] overtimeRates;
+    private final List<RegularRatePeriod> regularRates;
+    private final List<WageCalculator.Settings.OvertimeRate> overtimeRates;
 
     WageCalculatorSettingsImpl(final Configuration<WageCalculator.Settings> configuration) {
         final WageCalculator.Settings settings = configuration.settings();
@@ -27,14 +26,17 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
         this.timeZone = ZoneId.of(settings.timeZone());
 
         final List<WageCalculator.Settings.RegularRate> regularRates = settings.regularRates();
-        this.regularRates = Lists.asArray(RegularRatePeriod.class, regularRatePeriods(regularRates));
+        assert regularRates != null;
+        this.regularRates = regularRatePeriods(regularRates);
 
         final int highestRegularRate = regularRates.stream().mapToInt(WageCalculator.Settings.RegularRate::rateBy100).max().orElse(0);
 
         final List<WageCalculator.Settings.OvertimeRate> overtimeRates = settings.overtimeRates();
+        assert overtimeRates != null;
+
         validateOvertimeRates(highestRegularRate, overtimeRates);
 
-        this.overtimeRates = Lists.asArray(WageCalculator.Settings.OvertimeRate.class, overtimeRates);
+        this.overtimeRates = overtimeRates;
     }
 
     private List<RegularRatePeriod> regularRatePeriods(List<WageCalculator.Settings.RegularRate> rates) {
@@ -133,12 +135,12 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
     }
 
     @Override
-    public RegularRatePeriod[] regularRates() {
+    public List<RegularRatePeriod> regularRates() {
         return regularRates;
     }
 
     @Override
-    public WageCalculator.Settings.OvertimeRate[] overtimeRates() {
+    public List<WageCalculator.Settings.OvertimeRate> overtimeRates() {
         return overtimeRates;
     }
 }

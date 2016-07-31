@@ -27,13 +27,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
             }
 
             @Override
-            public RegularRatePeriod[] regularRates() {
-                return regular.toArray(new RegularRatePeriod[regular.size()]);
+            public List<RegularRatePeriod> regularRates() {
+                return regular;
             }
 
             @Override
-            public WageCalculator.Settings.OvertimeRate[] overtimeRates() {
-                return overtime.toArray(new WageCalculator.Settings.OvertimeRate[overtime.size()]);
+            public List<WageCalculator.Settings.OvertimeRate> overtimeRates() {
+                return overtime;
             }
         };
     }
@@ -45,12 +45,10 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.singletonList(regularRate(100, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
                                                          Collections.emptyList());
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 // empty
             }
 
@@ -73,8 +71,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -90,7 +86,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
@@ -122,8 +118,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -144,7 +138,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
@@ -176,8 +170,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -198,7 +190,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
@@ -239,8 +231,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -259,7 +249,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
@@ -294,8 +284,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -316,7 +304,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
@@ -357,8 +345,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -383,7 +369,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
@@ -424,8 +410,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -450,7 +434,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
@@ -485,8 +469,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -508,7 +490,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
@@ -549,8 +531,6 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final WageCalculatorFactory factory = new WageCalculatorFactory(settings);
-
         final List<WageDetails> wages = new ArrayList<>();
 
         final int year = 2000;
@@ -572,7 +552,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = factory.create(wages::add)) {
+            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
                 shifts.forEach(subject);
             }
 
