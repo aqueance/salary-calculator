@@ -33,16 +33,22 @@ final class Shift implements Comparable<Shift> {
 
     @Override
     public int compareTo(final Shift that) {
-        int result = this.personName.compareTo(that.personName);
+        int result;
 
-        if (result == 0) {
-            result = this.personId.compareTo(that.personId);
+        if (this == that) {
+            result = 0;
+        } else {
+            result = this.personName.compareTo(that.personName);
 
             if (result == 0) {
-                result = this.date.compareTo(that.date);
+                result = this.personId.compareTo(that.personId);
 
                 if (result == 0) {
-                    result = this.start().compareTo(that.start());
+                    result = this.date.compareTo(that.date);
+
+                    if (result == 0) {
+                        result = this.start().compareTo(that.start());
+                    }
                 }
             }
         }
