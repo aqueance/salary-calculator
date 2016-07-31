@@ -293,10 +293,7 @@ final class WageCalculatorFactory implements WageCalculator.Factory {
             // the most recent overtime rate; null means no (more) overtime level
             WageCalculator.Settings.OvertimeRate overtimeLevel = overtimeRates.hasNext() ? overtimeRates.next() : null;
 
-            // the threshold for the next overtime rate: 0 means no (more) overtime level
-            int nextLevelMinutes = overtimeLevel == null ? 0 : overtimeLevel.thresholdMinutes();
-
-            // the overtime rate for the current overtime level
+            // the overtime rate for the current overtime level (we start at the regular rates)
             int overtimeRate = 0;
 
             // total number of minutes worked so far today
@@ -304,37 +301,34 @@ final class WageCalculatorFactory implements WageCalculator.Factory {
 
             // keep track of what hourly rate to apply to the various shift segments
             for (final ShiftSegment segment : segments) {
-                int segmentMinutes = segment.minutes;
+                int payableMinutes = segment.minutes;
 
-                totalMinutes += segmentMinutes;
-
-                // the hourly rate to apply to the minutes under the next overtime threshold
-                int currentRate = overtimeRate > 0 ? overtimeRate : segment.rateBy100;
+                totalMinutes += payableMinutes;
 
                 // advance on the payment levels until all hours in the shift segment have been paid for
-                while (segmentMinutes > 0) {
+                while (payableMinutes > 0) {
 
                     // number of minutes over the next overtime threshold, if any
-                    final int excessMinutes = nextLevelMinutes == 0 ? 0 : Math.max(0, totalMinutes - nextLevelMinutes);
+                    final int excessMinutes = overtimeLevel == null ? 0 : Math.max(0, totalMinutes - overtimeLevel.thresholdMinutes());
 
                     // what should be paid at the current rate
                     assert excessMinutes >= 0 : excessMinutes;
-                    final int paidMinutes = Math.max(0, segmentMinutes - excessMinutes);
+                    final int paidMinutes = Math.max(0, payableMinutes - excessMinutes);
 
-                    salary.accept(paidMinutes, currentRate);
+                    // record the payment at the appropriate hourly rate
+                    assert overtimeRate == 0 || overtimeRate > segment.rateBy100;
+                    salary.accept(paidMinutes, Math.max(overtimeRate, segment.rateBy100));
 
-                    segmentMinutes -= paidMinutes;
+                    payableMinutes -= paidMinutes;
 
+                    // have we exceeded the current overtime threshold?
                     if (excessMinutes > 0) {
-                        currentRate = overtimeRate = overtimeLevel.rateBy100();
+
+                        // use the current overtime rate from now on
+                        overtimeRate = overtimeLevel.rateBy100();
 
                         // update the current rate and the next threshold
-                        if (overtimeRates.hasNext()) {
-                            overtimeLevel = overtimeRates.next();
-                            nextLevelMinutes = overtimeLevel.thresholdMinutes();
-                        } else {
-                            nextLevelMinutes = 0;      // no more overtime levels
-                        }
+                        overtimeLevel = overtimeRates.hasNext() ? overtimeRates.next() : null;
                     }
                 }
             }
