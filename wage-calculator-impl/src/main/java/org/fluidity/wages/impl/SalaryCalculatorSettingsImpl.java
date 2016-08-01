@@ -7,31 +7,31 @@ import java.util.List;
 
 import org.fluidity.composition.Component;
 import org.fluidity.foundation.Configuration;
-import org.fluidity.wages.WageCalculator;
+import org.fluidity.wages.SalaryCalculator;
 
 /**
- * Turns the settings in a {@link WageCalculator.Settings} object into a format that is directly palatable to the {@link
- * WageCalculatorPipeline}.
+ * Turns the settings in a {@link SalaryCalculator.Settings} object into a format that is directly palatable to the {@link
+ * SalaryCalculatorPipeline}.
  */
 @Component
-final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
+final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
 
     private final ZoneId timeZone;
     private final List<RegularRatePeriod> regularRates;
-    private final List<WageCalculator.Settings.OvertimeRate> overtimeRates;
+    private final List<SalaryCalculator.Settings.OvertimeRate> overtimeRates;
 
-    WageCalculatorSettingsImpl(final Configuration<WageCalculator.Settings> configuration) {
-        final WageCalculator.Settings settings = configuration.settings();
+    SalaryCalculatorSettingsImpl(final Configuration<SalaryCalculator.Settings> configuration) {
+        final SalaryCalculator.Settings settings = configuration.settings();
 
         this.timeZone = ZoneId.of(settings.timeZone());
 
-        final List<WageCalculator.Settings.RegularRate> regularRates = settings.regularRates();
+        final List<SalaryCalculator.Settings.RegularRate> regularRates = settings.regularRates();
         assert regularRates != null;
         this.regularRates = regularRatePeriods(regularRates);
 
-        final int highestRegularRate = regularRates.stream().mapToInt(WageCalculator.Settings.RegularRate::rateBy100).max().orElse(0);
+        final int highestRegularRate = regularRates.stream().mapToInt(SalaryCalculator.Settings.RegularRate::rateBy100).max().orElse(0);
 
-        final List<WageCalculator.Settings.OvertimeRate> overtimeRates = settings.overtimeRates();
+        final List<SalaryCalculator.Settings.OvertimeRate> overtimeRates = settings.overtimeRates();
         assert overtimeRates != null;
 
         validateOvertimeRates(highestRegularRate, overtimeRates);
@@ -39,12 +39,12 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
         this.overtimeRates = overtimeRates;
     }
 
-    private List<RegularRatePeriod> regularRatePeriods(List<WageCalculator.Settings.RegularRate> rates) {
+    private List<RegularRatePeriod> regularRatePeriods(List<SalaryCalculator.Settings.RegularRate> rates) {
         if (rates.isEmpty()) {
             throw new IllegalArgumentException("No regular rates specified");
         }
 
-        WageCalculator.Settings.RegularRate lastRate = rates.get(0);
+        SalaryCalculator.Settings.RegularRate lastRate = rates.get(0);
 
         // make sure the first period starts at midnight
         if (lastRate.fromMinute() > 0) {
@@ -67,7 +67,7 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
         final List<RegularRatePeriod> periods = new ArrayList<>(rates.size());
 
         for (int i = 1, ii = rates.size(); i < ii; i++) {
-            final WageCalculator.Settings.RegularRate nextRate = rates.get(i);
+            final SalaryCalculator.Settings.RegularRate nextRate = rates.get(i);
             periods.add(regularRatePeriod(lastRate, nextRate));
             lastRate = nextRate;
         }
@@ -85,10 +85,10 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
      *
      * @return TODO
      */
-    private int validateOvertimeRates(int lastRate, final List<WageCalculator.Settings.OvertimeRate> rates) {
+    private int validateOvertimeRates(int lastRate, final List<SalaryCalculator.Settings.OvertimeRate> rates) {
         int lastThreshold = 0;
 
-        for (final WageCalculator.Settings.OvertimeRate rate : rates) {
+        for (final SalaryCalculator.Settings.OvertimeRate rate : rates) {
             final int currentRate = rate.rateBy100();
             final int currentThreshold = rate.thresholdMinutes();
 
@@ -106,8 +106,8 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
         return lastRate;
     }
 
-    private WageCalculator.Settings.RegularRate regularRateFromMidnight(final int rate) {
-        return new WageCalculator.Settings.RegularRate() {
+    private SalaryCalculator.Settings.RegularRate regularRateFromMidnight(final int rate) {
+        return new SalaryCalculator.Settings.RegularRate() {
 
             @Override
             public int rateBy100() {
@@ -121,7 +121,7 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
         };
     }
 
-    private RegularRatePeriod regularRatePeriod(final WageCalculator.Settings.RegularRate currentRate, final WageCalculator.Settings.RegularRate nextRate) {
+    private RegularRatePeriod regularRatePeriod(final SalaryCalculator.Settings.RegularRate currentRate, final SalaryCalculator.Settings.RegularRate nextRate) {
         return new RegularRatePeriod(currentRate.rateBy100(), localTime(currentRate.fromMinute()), localTime(nextRate.fromMinute()));
     }
 
@@ -140,7 +140,7 @@ final class WageCalculatorSettingsImpl implements WageCalculatorSettings {
     }
 
     @Override
-    public List<WageCalculator.Settings.OvertimeRate> overtimeRates() {
+    public List<SalaryCalculator.Settings.OvertimeRate> overtimeRates() {
         return overtimeRates;
     }
 }

@@ -8,8 +8,8 @@ import org.fluidity.foundation.Configuration;
 /**
  * A pipeline that takes a stream of work shift details and emits a stream of monthly salaries.
  * <p>
- * Create an instance using {@link WageCalculator.Factory#create(Consumer)}, and pass the stream of {@link ShiftDetails} objects to it. When done, make sure
- * that {@link AutoCloseable#close()} is invoked on the instance. The stream of {@link WageDetails} objects will be sent, in an order sorted by person name
+ * Create an instance using {@link SalaryCalculator.Factory#create(Consumer)}, and pass the stream of {@link ShiftDetails} objects to it. When done, make sure
+ * that {@link AutoCloseable#close()} is invoked on the instance. The stream of {@link SalaryDetails} objects will be sent, in an order sorted by person name
  * and date, to the consumer the instance was created with.
  * <p>
  * Example:
@@ -22,26 +22,26 @@ import org.fluidity.foundation.Configuration;
  *         shifts.forEach(calculator);
  *     }
  * </pre>
- * The implementation of the {@link WageCalculator.Factory} interface is a
+ * The implementation of the {@link SalaryCalculator.Factory} interface is a
  * <a href="https://github.com/aqueance/fluid-tools/wiki/User%20Guide%20-%20Overview#components">dependency injected component</a>.
  */
-public interface WageCalculator extends Processor<ShiftDetails> {
+public interface SalaryCalculator extends Processor<ShiftDetails> {
 
     // no specific methods other than those inherited from Processor.
 
     /**
-     * Creates new {@link WageCalculator} instances.
+     * Creates new {@link SalaryCalculator} instances.
      */
     interface Factory {
 
         /**
-         * Creates a new {@link WageCalculator}.
+         * Creates a new {@link SalaryCalculator}.
          *
-         * @param consumer the consumer for the {@link WageDetails} stream.
+         * @param consumer the consumer for the {@link SalaryDetails} stream.
          *
          * @return a new instance; never <code>null</code>.
          */
-        WageCalculator create(Consumer<WageDetails> consumer);
+        SalaryCalculator create(Consumer<SalaryDetails> consumer);
     }
 
     /**

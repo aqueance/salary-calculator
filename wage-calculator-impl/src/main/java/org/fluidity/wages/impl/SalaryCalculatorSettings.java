@@ -3,12 +3,12 @@ package org.fluidity.wages.impl;
 import java.time.ZoneId;
 import java.util.List;
 
-import org.fluidity.wages.WageCalculator;
+import org.fluidity.wages.SalaryCalculator;
 
 /**
- * Runtime representation of a {@link WageCalculator.Settings} object.
+ * Runtime representation of a {@link SalaryCalculator.Settings} object.
  */
-interface WageCalculatorSettings {
+interface SalaryCalculatorSettings {
 
     /**
      * The time zone in which dates of the {@link org.fluidity.wages.ShiftDetails} objects are to be understood.
@@ -29,5 +29,5 @@ interface WageCalculatorSettings {
      *
      * @return a list, never <code>null</code> but possibly empty.
      */
-    List<WageCalculator.Settings.OvertimeRate> overtimeRates();
+    List<SalaryCalculator.Settings.OvertimeRate> overtimeRates();
 }

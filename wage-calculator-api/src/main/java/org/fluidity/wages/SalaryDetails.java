@@ -6,14 +6,14 @@ import java.time.LocalDate;
  * Represents a monthly salary for a person.
  */
 @SuppressWarnings("WeakerAccess")
-public final class WageDetails {
+public final class SalaryDetails {
 
     public final String personId;
     public final String personName;
     public final LocalDate date;
     public final int amountBy100;
 
-    public WageDetails(final String personId, final String personName, final LocalDate date, final int amountBy100) {
+    public SalaryDetails(final String personId, final String personName, final LocalDate date, final int amountBy100) {
         this.personId = personId;
         this.personName = personName;
         this.date = date;

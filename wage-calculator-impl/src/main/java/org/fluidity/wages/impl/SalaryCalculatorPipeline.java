@@ -11,25 +11,25 @@ import java.util.function.Consumer;
 
 import org.fluidity.composition.Component;
 import org.fluidity.wages.Processor;
-import org.fluidity.wages.WageCalculator;
-import org.fluidity.wages.WageDetails;
+import org.fluidity.wages.SalaryCalculator;
+import org.fluidity.wages.SalaryDetails;
 import org.fluidity.wages.ShiftDetails;
 
 /**
  * Implements the salary calculator as a pipeline of auto-closeable consumers. The {@link AutoCloseable#close()} method flushes the pipeline.
  * <p>
- * Instances are created by {@link WageCalculator.Factory#create(Consumer)}.
+ * Instances are created by {@link SalaryCalculator.Factory#create(Consumer)}.
  */
 @Component(automatic = false)
-final class WageCalculatorPipeline implements WageCalculator {
+final class SalaryCalculatorPipeline implements SalaryCalculator {
 
     private final ZoneId timeZone;
 
-    private final WageCalculatorSettings settings;
-    private final Consumer<WageDetails> consumer;
+    private final SalaryCalculatorSettings settings;
+    private final Consumer<SalaryDetails> consumer;
     private final Collection<WorkShift> shifts = new TreeSet<>();
 
-    WageCalculatorPipeline(final WageCalculatorSettings settings, final Consumer<WageDetails> consumer) {
+    SalaryCalculatorPipeline(final SalaryCalculatorSettings settings, final Consumer<SalaryDetails> consumer) {
         this.timeZone = settings.timeZone();
         this.settings = settings;
         this.consumer = consumer;
@@ -86,14 +86,14 @@ final class WageCalculatorPipeline implements WageCalculator {
         }
 
         /**
-         * Returns the {@link WageDetails} object for this person with the given monthly salary.
+         * Returns the {@link SalaryDetails} object for this person with the given monthly salary.
          *
          * @param salaryBy100 the salary amount to return, multiplied by 100.
          *
-         * @return a new {@link WageDetails} object; never <code>null</code>.
+         * @return a new {@link SalaryDetails} object; never <code>null</code>.
          */
-        WageDetails salary(final int salaryBy100) {
-            return new WageDetails(this.personId, this.personName, this.month, salaryBy100);
+        SalaryDetails salary(final int salaryBy100) {
+            return new SalaryDetails(this.personId, this.personName, this.month, salaryBy100);
         }
     }
 
@@ -108,8 +108,8 @@ final class WageCalculatorPipeline implements WageCalculator {
      */
     private static final class ShiftStreamProcessor implements Processor<WorkShift> {
 
-        private final WageCalculatorSettings settings;
-        private final Consumer<WageDetails> consumer;
+        private final SalaryCalculatorSettings settings;
+        private final Consumer<SalaryDetails> consumer;
 
         private Processor<WorkShift> tracker;
 
@@ -119,9 +119,9 @@ final class WageCalculatorPipeline implements WageCalculator {
         /**
          * Creates a new instance.
          *
-         * @param consumer The consumer to send {@link WageDetails} objects to.
+         * @param consumer The consumer to send {@link SalaryDetails} objects to.
          */
-        private ShiftStreamProcessor(final WageCalculatorSettings settings, final Consumer<WageDetails> consumer) {
+        private ShiftStreamProcessor(final SalaryCalculatorSettings settings, final Consumer<SalaryDetails> consumer) {
             this.settings = settings;
             this.consumer = consumer;
         }
@@ -167,7 +167,7 @@ final class WageCalculatorPipeline implements WageCalculator {
         private final List<ShiftSegment> segments = new ArrayList<>();
 
         @SuppressWarnings("Convert2streamapi")
-        DailyShiftSegments(final WageCalculatorSettings settings, final Processor<ShiftSegment> consumer) {
+        DailyShiftSegments(final SalaryCalculatorSettings settings, final Processor<ShiftSegment> consumer) {
             this.consumer = consumer;
 
             for (final RegularRatePeriod regularRate : settings.regularRates()) {
@@ -212,7 +212,7 @@ final class WageCalculatorPipeline implements WageCalculator {
          *
          * @param consumer the processor for {@link ShiftSegment} objects.
          */
-        DailyShiftTracker(final WageCalculatorSettings settings, final Processor<ShiftSegment> consumer) {
+        DailyShiftTracker(final SalaryCalculatorSettings settings, final Processor<ShiftSegment> consumer) {
             this.segments = new DailyShiftSegments(settings, consumer);
         }
 
@@ -278,7 +278,7 @@ final class WageCalculatorPipeline implements WageCalculator {
          *
          * @param salary the consumer for the monthly salary.
          */
-        MonthlySalaryTracker(final WageCalculatorSettings settings, final Consumer<Integer> salary) {
+        MonthlySalaryTracker(final SalaryCalculatorSettings settings, final Consumer<Integer> salary) {
             this.overtimeRates = settings.overtimeRates().iterator();
             this.overtimeLevel = this.overtimeRates.hasNext() ? this.overtimeRates.next() : null;
             this.salary = salary;

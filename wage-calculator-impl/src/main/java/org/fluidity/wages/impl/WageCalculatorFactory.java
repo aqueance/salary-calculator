@@ -4,11 +4,11 @@ import java.util.function.Consumer;
 
 import org.fluidity.composition.Component;
 import org.fluidity.composition.ComponentContainer;
-import org.fluidity.wages.WageCalculator;
-import org.fluidity.wages.WageDetails;
+import org.fluidity.wages.SalaryCalculator;
+import org.fluidity.wages.SalaryDetails;
 
 @Component
-final class WageCalculatorFactory implements WageCalculator.Factory {
+final class WageCalculatorFactory implements SalaryCalculator.Factory {
 
     private final ComponentContainer container;
 
@@ -18,7 +18,7 @@ final class WageCalculatorFactory implements WageCalculator.Factory {
 
     @Override
     @SuppressWarnings("unchecked")
-    public WageCalculator create(final Consumer<WageDetails> consumer) {
-        return container.instantiate(WageCalculatorPipeline.class, registry -> registry.bindInstance(consumer, Consumer.class));
+    public SalaryCalculator create(final Consumer<SalaryDetails> consumer) {
+        return container.instantiate(SalaryCalculatorPipeline.class, registry -> registry.bindInstance(consumer, Consumer.class));
     }
 }

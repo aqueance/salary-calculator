@@ -11,17 +11,17 @@ import java.util.List;
 
 import org.fluidity.testing.Simulator;
 import org.fluidity.wages.Processor;
-import org.fluidity.wages.WageCalculator;
-import org.fluidity.wages.WageDetails;
+import org.fluidity.wages.SalaryCalculator;
+import org.fluidity.wages.SalaryDetails;
 import org.fluidity.wages.ShiftDetails;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public final class WageCalculatorPipelineTest extends Simulator {
+public final class SalaryCalculatorPipelineTest extends Simulator {
 
-    private WageCalculatorSettings settings(final String timeZone, final List<RegularRatePeriod> regular, final List<WageCalculator.Settings.OvertimeRate> overtime) {
-        return new WageCalculatorSettings() {
+    private SalaryCalculatorSettings settings(final String timeZone, final List<RegularRatePeriod> regular, final List<SalaryCalculator.Settings.OvertimeRate> overtime) {
+        return new SalaryCalculatorSettings() {
             @Override
             public ZoneId timeZone() {
                 return ZoneId.of(timeZone);
@@ -33,7 +33,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
             }
 
             @Override
-            public List<WageCalculator.Settings.OvertimeRate> overtimeRates() {
+            public List<SalaryCalculator.Settings.OvertimeRate> overtimeRates() {
                 return overtime;
             }
         };
@@ -42,14 +42,14 @@ public final class WageCalculatorPipelineTest extends Simulator {
     @Test
     @SuppressWarnings({ "EmptyTryBlock", "unused" })
     public void acceptsEmptyList() throws Exception {
-        final WageCalculatorSettings settings = settings("Europe/Helsinki",
-                                                         Collections.singletonList(regularRate(100, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
-                                                         Collections.emptyList());
+        final SalaryCalculatorSettings settings = settings("Europe/Helsinki",
+                                                           Collections.singletonList(regularRate(100, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           Collections.emptyList());
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 // empty
             }
 
@@ -63,16 +63,16 @@ public final class WageCalculatorPipelineTest extends Simulator {
 
         final int regularRate = 100;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 all day
-                                                         Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           // regular hours $1.00 all day
+                                                           Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
 
-                                                         // no overtime
-                                                         Collections.emptyList()
+                                                           // no overtime
+                                                           Collections.emptyList()
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -87,13 +87,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = salary.get(0);
+            final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, regularRate);    // 1 hour on regular rate
 
@@ -110,16 +110,16 @@ public final class WageCalculatorPipelineTest extends Simulator {
 
         final int regularRate = 100;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 all day
-                                                         Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           // regular hours $1.00 all day
+                                                           Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
 
-                                                         // no overtime
-                                                         Collections.emptyList()
+                                                           // no overtime
+                                                           Collections.emptyList()
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -139,13 +139,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = salary.get(0);
+            final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 2 * regularRate);    // 2 hours on regular rate
 
@@ -162,16 +162,16 @@ public final class WageCalculatorPipelineTest extends Simulator {
 
         final int regularRate = 100;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 all day
-                                                         Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           // regular hours $1.00 all day
+                                                           Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
 
-                                                         // no overtime
-                                                         Collections.emptyList()
+                                                           // no overtime
+                                                           Collections.emptyList()
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -191,13 +191,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = salary.get(0);
+            final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 2 * regularRate);    // 2 hours on regular rate
 
@@ -218,21 +218,21 @@ public final class WageCalculatorPipelineTest extends Simulator {
         final int overtimeLevel1Rate = 200;
         final int overtimeLevel2Rate = 300;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 from 10:00 to 15:00
-                                                         // evening hours $1.50 from 15:00 to 10:00
-                                                         Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           // regular hours $1.00 from 10:00 to 15:00
+                                                           // evening hours $1.50 from 15:00 to 10:00
+                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                        regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
-                                                         // overtime compensation:
-                                                         //  $2.00 from 4 hours
-                                                         //  $3.00 from 6 hours
-                                                         Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
+                                                           // overtime compensation:
+                                                           //  $2.00 from 4 hours
+                                                           //  $3.00 from 6 hours
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -250,13 +250,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = salary.get(0);
+            final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 3 * regularRate + eveningRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
@@ -274,18 +274,18 @@ public final class WageCalculatorPipelineTest extends Simulator {
         final int regularRate = 100;
         final int eveningRate = 150;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 from 10:00 to 15:00
-                                                         // evening hours $1.50 from 15:00 to 10:00
-                                                         Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           // regular hours $1.00 from 10:00 to 15:00
+                                                           // evening hours $1.50 from 15:00 to 10:00
+                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                        regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
-                                                         // no overtime
-                                                         Collections.emptyList()
+                                                           // no overtime
+                                                           Collections.emptyList()
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -305,13 +305,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = salary.get(0);
+            final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, regularRate + eveningRate);    // 1 hour on each rate
 
@@ -332,21 +332,21 @@ public final class WageCalculatorPipelineTest extends Simulator {
         final int overtimeLevel1Rate = 200;
         final int overtimeLevel2Rate = 300;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 from 10:00 to 15:00
-                                                         // evening hours $1.50 from 15:00 to 10:00
-                                                         Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           // regular hours $1.00 from 10:00 to 15:00
+                                                           // evening hours $1.50 from 15:00 to 10:00
+                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                        regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
-                                                         // overtime compensation:
-                                                         //  $2.00 from 4 hours
-                                                         //  $3.00 from 6 hours
-                                                         Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
+                                                           // overtime compensation:
+                                                           //  $2.00 from 4 hours
+                                                           //  $3.00 from 6 hours
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -370,13 +370,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = salary.get(0);
+            final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 3 * regularRate + eveningRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
@@ -397,21 +397,21 @@ public final class WageCalculatorPipelineTest extends Simulator {
         final int overtimeLevel1Rate = 200;
         final int overtimeLevel2Rate = 300;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 from 10:00 to 15:00
-                                                         // evening hours $1.50 from 15:00 to 10:00
-                                                         Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           // regular hours $1.00 from 10:00 to 15:00
+                                                           // evening hours $1.50 from 15:00 to 10:00
+                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                        regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
-                                                         // overtime compensation:
-                                                         //  $2.00 from 4 hours
-                                                         //  $3.00 from 6 hours
-                                                         Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
+                                                           // overtime compensation:
+                                                           //  $2.00 from 4 hours
+                                                           //  $3.00 from 6 hours
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -435,13 +435,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = salary.get(0);
+            final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 4 * regularRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
@@ -459,18 +459,18 @@ public final class WageCalculatorPipelineTest extends Simulator {
         final int regularRate = 100;
         final int eveningRate = 150;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 from 10:00 to 15:00
-                                                         // evening hours $1.50 from 15:00 to 10:00
-                                                         Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           // regular hours $1.00 from 10:00 to 15:00
+                                                           // evening hours $1.50 from 15:00 to 10:00
+                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                        regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
-                                                         // no overtime
-                                                         Collections.emptyList()
+                                                           // no overtime
+                                                           Collections.emptyList()
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -491,13 +491,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 2);
 
-            final WageDetails details1 = salary.get(1);               // salary records are sorted by person name
+            final SalaryDetails details1 = salary.get(1);               // salary records are sorted by person name
             Assert.assertEquals(details1.personId, personId1);
             Assert.assertEquals(details1.amountBy100, regularRate);     // 1 hour on regular rate
 
@@ -506,7 +506,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details1.date.getMonth(), month);
             Assert.assertEquals(details1.date.getDayOfMonth(), 1);
 
-            final WageDetails details2 = salary.get(0);               // salary records are sorted by person name
+            final SalaryDetails details2 = salary.get(0);               // salary records are sorted by person name
             Assert.assertEquals(details2.personId, personId2);
             Assert.assertEquals(details2.amountBy100, eveningRate);     // 1 hour on the evening rate
 
@@ -523,16 +523,16 @@ public final class WageCalculatorPipelineTest extends Simulator {
 
         final int regularRate = 100;
 
-        final WageCalculatorSettings settings = settings(zoneName,
+        final SalaryCalculatorSettings settings = settings(zoneName,
 
-                                                         // regular hours $1.00 all day
-                                                         Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           // regular hours $1.00 all day
+                                                           Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
 
-                                                         // no overtime
-                                                         Collections.emptyList()
+                                                           // no overtime
+                                                           Collections.emptyList()
         );
 
-        final List<WageDetails> salary = new ArrayList<>();
+        final List<SalaryDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month1 = Month.JANUARY;
@@ -553,13 +553,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
+            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
             Assert.assertEquals(salary.size(), 2);
 
-            final WageDetails details1 = salary.get(0);
+            final SalaryDetails details1 = salary.get(0);
             Assert.assertEquals(details1.personId, personId);
             Assert.assertEquals(details1.amountBy100, regularRate);    // 1 hour on regular rate
 
@@ -568,7 +568,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details1.date.getMonth(), month1);
             Assert.assertEquals(details1.date.getDayOfMonth(), 1);
 
-            final WageDetails details2 = salary.get(1);
+            final SalaryDetails details2 = salary.get(1);
             Assert.assertEquals(details2.personId, personId);
             Assert.assertEquals(details2.amountBy100, regularRate);    // 1 hour on regular rate
 
@@ -585,8 +585,8 @@ public final class WageCalculatorPipelineTest extends Simulator {
         return new RegularRatePeriod(rate, begin, end);
     }
 
-    private static WageCalculator.Settings.OvertimeRate overtimeRate(final int rate, final int fromMinutes) {
-        return new WageCalculator.Settings.OvertimeRate() {
+    private static SalaryCalculator.Settings.OvertimeRate overtimeRate(final int rate, final int fromMinutes) {
+        return new SalaryCalculator.Settings.OvertimeRate() {
             @Override
             public int thresholdMinutes() {
                 return fromMinutes;
