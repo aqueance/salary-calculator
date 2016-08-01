@@ -8,11 +8,11 @@ import org.fluidity.wages.SalaryCalculator;
 import org.fluidity.wages.SalaryDetails;
 
 @Component
-final class WageCalculatorFactory implements SalaryCalculator.Factory {
+final class SalaryCalculatorFactory implements SalaryCalculator.Factory {
 
     private final ComponentContainer container;
 
-    WageCalculatorFactory(final ComponentContainer container) {
+    SalaryCalculatorFactory(final ComponentContainer container) {
         this.container = container;
     }
 
