@@ -2,6 +2,7 @@ package org.fluidity.wages.impl;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -9,167 +10,210 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 
 import org.fluidity.composition.Component;
-import org.fluidity.wages.ShiftDetails;
+import org.fluidity.wages.Processor;
 import org.fluidity.wages.WageCalculator;
 import org.fluidity.wages.WageDetails;
+import org.fluidity.wages.ShiftDetails;
 
 /**
- * Implements the wage calculator as a pipeline of auto-closeable consumers. The {@link AutoCloseable#close()} method flushes the pipeline.
+ * Implements the salary calculator as a pipeline of auto-closeable consumers. The {@link AutoCloseable#close()} method flushes the pipeline.
  * <p>
- * Instances are created by {@link org.fluidity.wages.WageCalculator.Factory#create(Consumer)}.
+ * Instances are created by {@link WageCalculator.Factory#create(Consumer)}.
  */
 @Component(automatic = false)
 final class WageCalculatorPipeline implements WageCalculator {
 
     private final ZoneId timeZone;
-    private final List<RegularRatePeriod> regularRates;
-    private final List<Settings.OvertimeRate> overtimeRates;
 
+    private final WageCalculatorSettings settings;
     private final Consumer<WageDetails> consumer;
-    private final Collection<Shift> shifts = new TreeSet<>();
+    private final Collection<WorkShift> shifts = new TreeSet<>();
 
     WageCalculatorPipeline(final WageCalculatorSettings settings, final Consumer<WageDetails> consumer) {
         this.timeZone = settings.timeZone();
-        this.regularRates = settings.regularRates();
-        this.overtimeRates = settings.overtimeRates();
+        this.settings = settings;
         this.consumer = consumer;
     }
 
     @Override
-    public void close() {
-        try (final ShiftStreamProcessor processor = new ShiftStreamProcessor(consumer)) {
+    public void flush() {
+        try (final Processor<WorkShift> processor = new ShiftStreamProcessor(settings, consumer)) {
             shifts.forEach(processor);
         }
+
+        shifts.clear();
+    }
+
+    @Override
+    public void close() {
+        flush();
     }
 
     @Override
     public void accept(final ShiftDetails details) {
-        shifts.add(new Shift(details, timeZone));
+        shifts.add(new WorkShift(details, timeZone));
+    }
+
+    /**
+     * Keeps track of the person whose work shifts are currently being processed.
+     */
+    private static class PersonDetails {
+
+        private final String personId;
+        private final String personName;
+        private final LocalDate month;
+
+        /**
+         * Creates a new instance with the details of the person the given work shift belongs to.
+         *
+         * @param shift the work shift.
+         */
+        PersonDetails(final WorkShift shift) {
+            this.personId = shift.personId;
+            this.personName = shift.personName;
+            this.month = shift.month();
+        }
+
+        /**
+         * Checks if this instance maintains details about the person that the given shift applies to.
+         *
+         * @param shift the work shift to check.
+         *
+         * @return <code>true</code> if the given shift applies to the person being maintained by the receiver; <code>false</code> otherwise
+         */
+        boolean matches(final WorkShift shift) {
+            return this.personId.equals(shift.personId) && this.month.equals(shift.month());
+        }
+
+        /**
+         * Returns the {@link WageDetails} object for this person with the given monthly salary.
+         *
+         * @param salaryBy100 the salary amount to return, multiplied by 100.
+         *
+         * @return a new {@link WageDetails} object; never <code>null</code>.
+         */
+        WageDetails salary(final int salaryBy100) {
+            return new WageDetails(this.personId, this.personName, this.month, salaryBy100);
+        }
     }
 
     /**
      * Assuming a stream of work shifts sorted by person ID and shift date,
-     * an instance of this class maintains a wage object for the current
-     * person ID and month, and computes the monthly wages from the
+     * an instance of this class maintains a salary object for the current
+     * person ID and month, and computes the monthly salary from the
      * corresponding work shift details.
      * <p>
-     * A sorted stream allows maintaining a single wage object at a time
-     * rather than using a map to maintain all of them at the same time.
+     * A sorted stream allows working on one person at a time rather than
+     * using a map to maintain state for all of them at the same time.
      */
-    private final class ShiftStreamProcessor implements Consumer<Shift>, AutoCloseable {
+    private static final class ShiftStreamProcessor implements Processor<WorkShift> {
 
+        private final WageCalculatorSettings settings;
         private final Consumer<WageDetails> consumer;
 
-        private DailyWageTracker tracker = null;
+        private Processor<WorkShift> tracker;
 
-        private ShiftStreamProcessor(final Consumer<WageDetails> consumer) {
+        // Keeps track of the person currently being processed.
+        private PersonDetails person;
+
+        /**
+         * Creates a new instance.
+         *
+         * @param consumer The consumer to send {@link WageDetails} objects to.
+         */
+        private ShiftStreamProcessor(final WageCalculatorSettings settings, final Consumer<WageDetails> consumer) {
+            this.settings = settings;
             this.consumer = consumer;
         }
 
-        /**
-         * Receives a work shift stream, one object at a time.
-         *
-         * @param shift the work shift details to process.
-         */
-        public void accept(final Shift shift) {
-            final String personId = shift.personId;
-            final LocalDate month = shift.month();
-
-            if (tracker == null || !tracker.tracking(personId, month)) {
+        @Override
+        public void accept(final WorkShift shift) {
+            if (tracker == null || !person.matches(shift)) {
                 flush();
 
-                tracker = new DailyWageTracker(personId, shift.personName, month, consumer);
+                person = new PersonDetails(shift);
+                tracker = new DailyShiftTracker(settings, new MonthlySalaryTracker(settings, this::reportSalary));
             }
 
             tracker.accept(shift);
         }
 
-        /**
-         * Completes and flushes the currently tracked salary.
-         */
-        private void flush() {
+        private void reportSalary(final int salaryBy100) {
+            consumer.accept(person.salary(salaryBy100));
+        }
+
+        @Override
+        public void flush() {
             if (tracker != null) {
                 tracker.close();
-                tracker =  null;
             }
         }
 
         @Override
         public void close() {
             flush();
+
+            tracker = null;
         }
     }
 
     /**
-     * A functional interface to accept a number of minutes with some hourly rate.
+     * Computes the overlap between the daily shifts of a person and the regular hourly rate periods. For each regular rate period, there is a shift segment
+     * that maintains the number of minutes it overlaps with the daily shifts, and the hourly rate for those minutes.
      */
-    @FunctionalInterface
-    private interface PaymentConsumer {
+    private static final class DailyShiftSegments implements Processor<WorkShift> {
 
-        /**
-         * Accepts a number of minutes remunerated at a given hourly rate.
-         *
-         * @param minutes   the number of minutes.
-         * @param rateBy100 the hourly rate multiplied by 100 (precision for dollar amounts).
-         */
-        void accept(int minutes, int rateBy100);
+        private final Processor<ShiftSegment> consumer;
+        private final List<ShiftSegment> segments = new ArrayList<>();
+
+        @SuppressWarnings("Convert2streamapi")
+        DailyShiftSegments(final WageCalculatorSettings settings, final Processor<ShiftSegment> consumer) {
+            this.consumer = consumer;
+
+            for (final RegularRatePeriod regularRate : settings.regularRates()) {
+                segments.add(new ShiftSegment(regularRate));
+            }
+        }
+
+        @Override
+        public void accept(final WorkShift shift) {
+            segments.forEach(segment -> segment.accept(shift));
+        }
+
+        @Override
+        public void flush() {
+            segments.forEach(consumer);
+            reset();
+        }
+
+        @Override
+        public void close() {
+            flush();
+            consumer.close();
+        }
+
+        private void reset() {
+            segments.forEach(ShiftSegment::reset);
+        }
     }
 
     /**
      * Instances of this class track the hourly rates of a person during the day, including regular / evening rates and overtime rates. This is done by
-     * accepting a list of work shift details sorted by date and producing the monthly wage when done.
+     * accepting a list of work shift details sorted by date and producing the monthly salary when done.
      */
-    private final class DailyWageTracker implements Consumer<Shift>, AutoCloseable {
-
-        private final String personId;
-        private final String personName;
-        private final LocalDate month;
-
-        private final ShiftSegment[] shiftSegments = regularRates.stream().map(ShiftSegment::new).toArray(ShiftSegment[]::new);
-        private final MonthlyWage calculator = new MonthlyWage(this::addSalary);
-        private final Consumer<WageDetails> consumer;
+    private static final class DailyShiftTracker implements Processor<WorkShift> {
 
         // the day being processed
         private LocalDate currentDate = null;
-
-        // the running sum of the wage along the shift stream, multiplied by 60 (minutes per hour) * 100 (dollar precision)
-        private int wageBy6000;
+        private DailyShiftSegments segments;
 
         /**
          * Creates a new instance for the given person in the given month.
          *
-         * @param personId   the person ID.
-         * @param personName the person's name.
-         * @param month      the month.
-         * @param consumer   the consumer to send {@link WageDetails} objects to.
+         * @param consumer the processor for {@link ShiftSegment} objects.
          */
-        DailyWageTracker(final String personId, final String personName, final LocalDate month, final Consumer<WageDetails> consumer) {
-            this.personId = personId;
-            this.personName = personName;
-            this.month = month;
-            this.consumer = consumer;
-        }
-
-        /**
-         * Checks if this instances tracks the shifts of the given person in the given month.
-         *
-         * @param personId the ID of the person to check.
-         * @param month    the month to check.
-         *
-         * @return <code>true</code> if this instance indeed tracks the given details, <code>false</code> otherwise.
-         */
-        boolean tracking(final String personId, final LocalDate month) {
-            return this.personId.equals(personId) && this.month.equals(month);
-        }
-
-        /**
-         * Adds the hourly rate for the given number of minutes to the tracked person's monthly wage.
-         *
-         * @param minutes   the number of minutes to add.
-         * @param rateBy100 the hourly rate for the given number of minutes.
-         */
-        private void addSalary(final int minutes, final int rateBy100) {
-            wageBy6000 += minutes * rateBy100;
+        DailyShiftTracker(final WageCalculatorSettings settings, final Processor<ShiftSegment> consumer) {
+            this.segments = new DailyShiftSegments(settings, consumer);
         }
 
         /**
@@ -180,121 +224,122 @@ final class WageCalculatorPipeline implements WageCalculator {
          * @param shift the work shift details to accept.
          */
         @Override
-        public void accept(final Shift shift) {
+        public void accept(final WorkShift shift) {
             final LocalDate shiftDate = shift.date;
 
             if (currentDate != null && !shiftDate.equals(currentDate)) {
-                calculator.accept(shiftSegments);
-                resetShiftSegments();
+                flush();
+                segments.reset();
             }
 
             currentDate = shiftDate;
-
-            updateShiftSegments(shift);
+            segments.accept(shift);
         }
 
-        /**
-         * Calculates the overlap between the regular rate intervals and that of the given work shift and records the number of minutes in each rate level.
-         *
-         * @param shift the work shift to process.
-         */
-        private void updateShiftSegments(final Shift shift) {
-            for (final ShiftSegment segment : shiftSegments) {
-                segment.accept(shift);
-            }
-        }
-
-        /**
-         * Resets the recorded work minutes for each regular rate level, so that subsequent invocations of {@link #updateShiftSegments(Shift)} have a baseline.
-         */
-        private void resetShiftSegments() {
-            for (final ShiftSegment segment : shiftSegments) {
-                segment.reset();
+        @Override
+        public void flush() {
+            if (segments != null) {
+                segments.flush();
             }
         }
 
         @Override
         public void close() {
-            assert currentDate != null : personId;
-            calculator.accept(shiftSegments);
+            flush();
 
-            consumer.accept(new WageDetails(personId, personName, month, Math.round((float) wageBy6000 / (float) 60)));
+            segments.close();
         }
     }
 
     /**
-     * Calculates the monthly wage from the consumed daily shifts.
+     * Calculates the monthly salary from the consumed daily shifts.
      */
-    private final class MonthlyWage implements Consumer<ShiftSegment[]> {
+    private static final class MonthlySalaryTracker implements Processor<ShiftSegment> {
 
-        private final PaymentConsumer salary;
+        private final Consumer<Integer> salary;
 
-        MonthlyWage(final PaymentConsumer salary) {
+        // The overtime rate levels to work with.
+        private final Iterator<Settings.OvertimeRate> overtimeRates;
+
+        // The most recent overtime rate; null means no (more) overtime level.
+        private Settings.OvertimeRate overtimeLevel;
+
+        // The overtime rate for the current overtime level (we start at the regular rates).
+        private int overtimeRate = 0;
+
+        // Total number of minutes worked so far today.
+        private int totalMinutes = 0;
+
+        // The running sum of the salary along the shift stream, multiplied by 60 (minutes per hour) * 100 (dollar precision).
+        private int salaryBy6000;
+
+        /**
+         * Creates a new instance.
+         *
+         * @param salary the consumer for the monthly salary.
+         */
+        MonthlySalaryTracker(final WageCalculatorSettings settings, final Consumer<Integer> salary) {
+            this.overtimeRates = settings.overtimeRates().iterator();
+            this.overtimeLevel = this.overtimeRates.hasNext() ? this.overtimeRates.next() : null;
             this.salary = salary;
         }
 
-        /**
-         * Accepts a list of shift segments that represent a day's work.
-         *
-         * @param segments the array of shift segments.
-         */
-        public void accept(final ShiftSegment[] segments) {
-            final Iterator<Settings.OvertimeRate> overtimeRates = WageCalculatorPipeline.this.overtimeRates.iterator();
+        @Override
+        public void accept(final ShiftSegment segment) {
+            int payableMinutes = segment.minutes();
 
-            // the most recent overtime rate; null means no (more) overtime level
-            Settings.OvertimeRate overtimeLevel = overtimeRates.hasNext() ? overtimeRates.next() : null;
+            totalMinutes += payableMinutes;
 
-            // the overtime rate for the current overtime level (we start at the regular rates)
-            int overtimeRate = 0;
+            // advance on the payment levels until all hours in the shift segment have been paid for
+            while (payableMinutes > 0) {
 
-            // total number of minutes worked so far today
-            int totalMinutes = 0;
+                // number of minutes over the next overtime threshold, if any
+                final int excessMinutes = overtimeLevel == null ? 0 : Math.max(0, totalMinutes - overtimeLevel.thresholdMinutes());
 
-            // keep track of what hourly rate to apply to the various shift segments
-            for (final ShiftSegment segment : segments) {
-                int payableMinutes = segment.minutes;
+                // what should be paid at the current rate
+                assert excessMinutes >= 0 : excessMinutes;
+                final int paidMinutes = Math.max(0, payableMinutes - excessMinutes);
 
-                totalMinutes += payableMinutes;
+                // record the payment at the appropriate hourly rate
+                assert overtimeRate == 0 || overtimeRate > segment.rateBy100();
+                salaryBy6000 += paidMinutes * Math.max(overtimeRate, segment.rateBy100());
 
-                // advance on the payment levels until all hours in the shift segment have been paid for
-                while (payableMinutes > 0) {
+                payableMinutes -= paidMinutes;
 
-                    // number of minutes over the next overtime threshold, if any
-                    final int excessMinutes = overtimeLevel == null ? 0 : Math.max(0, totalMinutes - overtimeLevel.thresholdMinutes());
+                // have we exceeded the current overtime threshold?
+                if (excessMinutes > 0) {
 
-                    // what should be paid at the current rate
-                    assert excessMinutes >= 0 : excessMinutes;
-                    final int paidMinutes = Math.max(0, payableMinutes - excessMinutes);
+                    // use the current overtime rate from now on
+                    overtimeRate = overtimeLevel.rateBy100();
 
-                    // record the payment at the appropriate hourly rate
-                    assert overtimeRate == 0 || overtimeRate > segment.rateBy100;
-                    salary.accept(paidMinutes, Math.max(overtimeRate, segment.rateBy100));
-
-                    payableMinutes -= paidMinutes;
-
-                    // have we exceeded the current overtime threshold?
-                    if (excessMinutes > 0) {
-
-                        // use the current overtime rate from now on
-                        overtimeRate = overtimeLevel.rateBy100();
-
-                        // update the current rate and the next threshold
-                        overtimeLevel = overtimeRates.hasNext() ? overtimeRates.next() : null;
-                    }
+                    // update the current rate and the next threshold
+                    overtimeLevel = overtimeRates.hasNext() ? overtimeRates.next() : null;
                 }
             }
+        }
+
+        @Override
+        public void flush() {
+            salary.accept(Math.round((float) salaryBy6000 / (float) 60));
+        }
+
+        @Override
+        public void close() {
+            flush();
         }
     }
 
     /**
-     * A shift segment is a number of minutes that overlap some regular rate period, along with the applicable regular rate.
+     * A shift segment is the total number of minutes in some regular rate period that overlap a list of daily work shifts, along with the applicable regular
+     * rate.
      */
-    private static final class ShiftSegment implements Consumer<Shift> {
+    private static final class ShiftSegment implements Consumer<WorkShift> {
 
-        final int rateBy100;
-        int minutes;
+        // The corresponding regular rate period.
+        private final RegularRatePeriod period;
 
-        private final LocalTimeInterval interval;
+        // The number of minutes in this segment.
+        private int minutes;
 
         /**
          * Creates a new instance for the given regular rate period.
@@ -302,8 +347,7 @@ final class WageCalculatorPipeline implements WageCalculator {
          * @param period the regular rate period.
          */
         ShiftSegment(final RegularRatePeriod period) {
-            this.rateBy100 = period.rateBy100;
-            this.interval = period.interval;
+            this.period = period;
         }
 
         /**
@@ -312,17 +356,35 @@ final class WageCalculatorPipeline implements WageCalculator {
          * @param shift the shift interval.
          */
         @Override
-        public void accept(final Shift shift) {
+        public void accept(final WorkShift shift) {
 
             // type cast: we are dealing with time in human terms so 32 bits should be enough
-            this.minutes += (int) shift.overlap(this.interval).toMinutes();
+            minutes += (int) shift.overlap(period.interval).toMinutes();
         }
 
         /**
          * Resets the minute count to prepare for the next day's work shifts.
          */
         void reset() {
-            this.minutes = 0;
+            minutes = 0;
+        }
+
+        /**
+         * Returns the the regular hourly rate for this segment.
+         *
+         * @return a number, always greter than <code>0</code>.
+         */
+        int rateBy100() {
+            return period.rateBy100;
+        }
+
+        /**
+         * Returns the number of minutes accumulated so far.
+         *
+         * @return a number of minutes, always greater than or equal to <code>0</code>.
+         */
+        int minutes() {
+            return minutes;
         }
     }
 }

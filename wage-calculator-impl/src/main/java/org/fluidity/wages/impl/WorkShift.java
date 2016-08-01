@@ -10,7 +10,7 @@ import org.fluidity.wages.ShiftDetails;
 /**
  * Represents a work shift by a particular person on a particular local date during a certain time interval.
  */
-final class Shift implements Comparable<Shift> {
+final class WorkShift implements Comparable<WorkShift> {
 
     final String personId;
     final String personName;
@@ -24,7 +24,7 @@ final class Shift implements Comparable<Shift> {
      * @param details  the shift details as specified via the API.
      * @param timeZone the time zone in which the shift has been performed.
      */
-    Shift(final ShiftDetails details, final ZoneId timeZone) {
+    WorkShift(final ShiftDetails details, final ZoneId timeZone) {
         this.personId = details.personId;
         this.personName = details.personName;
         this.date = details.date;
@@ -32,7 +32,7 @@ final class Shift implements Comparable<Shift> {
     }
 
     @Override
-    public int compareTo(final Shift that) {
+    public int compareTo(final WorkShift that) {
         int result;
 
         if (this == that) {

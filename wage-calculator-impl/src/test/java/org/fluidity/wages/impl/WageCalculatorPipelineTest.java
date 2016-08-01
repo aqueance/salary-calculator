@@ -10,9 +10,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.fluidity.testing.Simulator;
-import org.fluidity.wages.ShiftDetails;
+import org.fluidity.wages.Processor;
 import org.fluidity.wages.WageCalculator;
 import org.fluidity.wages.WageDetails;
+import org.fluidity.wages.ShiftDetails;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -45,19 +46,19 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.singletonList(regularRate(100, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
                                                          Collections.emptyList());
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 // empty
             }
 
-            Assert.assertTrue(wages.isEmpty());
+            Assert.assertTrue(salary.isEmpty());
         });
     }
 
     @Test
-    public void computesWagesForOneHourShift() throws Exception {
+    public void computesSalaryForOneHourShift() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -71,7 +72,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -86,13 +87,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 1);
+            Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = wages.get(0);
+            final WageDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, regularRate);    // 1 hour on regular rate
 
@@ -104,7 +105,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
     }
 
     @Test
-    public void computesWagesForTwoOneHourShifts() throws Exception {
+    public void computesSalaryForTwoOneHourShifts() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -118,7 +119,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -138,13 +139,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 1);
+            Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = wages.get(0);
+            final WageDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 2 * regularRate);    // 2 hours on regular rate
 
@@ -156,7 +157,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
     }
 
     @Test
-    public void computesWagesForOneHourShiftsInTwoDays() throws Exception {
+    public void computesSalaryForOneHourShiftsInTwoDays() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -170,7 +171,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -190,13 +191,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 1);
+            Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = wages.get(0);
+            final WageDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 2 * regularRate);    // 2 hours on regular rate
 
@@ -208,7 +209,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
     }
 
     @Test
-    public void computesWagesForTwoOvertimeLevelsWithinOneShift() throws Exception {
+    public void computesSalaryForTwoOvertimeLevelsWithinOneShift() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -231,7 +232,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -249,13 +250,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 1);
+            Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = wages.get(0);
+            final WageDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 3 * regularRate + eveningRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
@@ -267,7 +268,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
     }
 
     @Test
-    public void computesWagesForTwoShiftsOnDifferentRegularRates() throws Exception {
+    public void computesSalaryForTwoShiftsOnDifferentRegularRates() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -284,7 +285,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -304,13 +305,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 1);
+            Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = wages.get(0);
+            final WageDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, regularRate + eveningRate);    // 1 hour on each rate
 
@@ -322,7 +323,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
     }
 
     @Test
-    public void computesWagesForTwoShiftsOnDifferentOvertimeRates() throws Exception {
+    public void computesSalaryForTwoShiftsOnDifferentOvertimeRates() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -345,7 +346,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -369,13 +370,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 1);
+            Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = wages.get(0);
+            final WageDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 3 * regularRate + eveningRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
@@ -387,7 +388,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
     }
 
     @Test
-    public void computesWagesForTwoShiftsOnDifferentOvertimeRatesSkippingOneRegularLevel() throws Exception {
+    public void computesSalaryForTwoShiftsOnDifferentOvertimeRatesSkippingOneRegularLevel() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -410,7 +411,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                                        overtimeRate(overtimeLevel2Rate, 6 * 60))
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -434,13 +435,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 1);
+            Assert.assertEquals(salary.size(), 1);
 
-            final WageDetails details = wages.get(0);
+            final WageDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
             Assert.assertEquals(details.amountBy100, 4 * regularRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
@@ -452,7 +453,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
     }
 
     @Test
-    public void computesWagesForTwoPeople() throws Exception {
+    public void computesSalaryForTwoPeople() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -469,7 +470,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month = Month.JANUARY;
@@ -490,13 +491,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 2);
+            Assert.assertEquals(salary.size(), 2);
 
-            final WageDetails details1 = wages.get(1);                  // wage records are sorted by person name
+            final WageDetails details1 = salary.get(1);               // salary records are sorted by person name
             Assert.assertEquals(details1.personId, personId1);
             Assert.assertEquals(details1.amountBy100, regularRate);     // 1 hour on regular rate
 
@@ -505,7 +506,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details1.date.getMonth(), month);
             Assert.assertEquals(details1.date.getDayOfMonth(), 1);
 
-            final WageDetails details2 = wages.get(0);                  // wage records are sorted by person name
+            final WageDetails details2 = salary.get(0);               // salary records are sorted by person name
             Assert.assertEquals(details2.personId, personId2);
             Assert.assertEquals(details2.amountBy100, eveningRate);     // 1 hour on the evening rate
 
@@ -517,7 +518,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
     }
 
     @Test
-    public void computesWagesForTwoMonths() throws Exception {
+    public void computesSalaryForTwoMonths() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
         final int regularRate = 100;
@@ -531,7 +532,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
                                                          Collections.emptyList()
         );
 
-        final List<WageDetails> wages = new ArrayList<>();
+        final List<WageDetails> salary = new ArrayList<>();
 
         final int year = 2000;
         final Month month1 = Month.JANUARY;
@@ -552,13 +553,13 @@ public final class WageCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final WageCalculator subject = new WageCalculatorPipeline(settings, wages::add)) {
+            try (final Processor<ShiftDetails> subject = new WageCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
-            Assert.assertEquals(wages.size(), 2);
+            Assert.assertEquals(salary.size(), 2);
 
-            final WageDetails details1 = wages.get(0);
+            final WageDetails details1 = salary.get(0);
             Assert.assertEquals(details1.personId, personId);
             Assert.assertEquals(details1.amountBy100, regularRate);    // 1 hour on regular rate
 
@@ -567,7 +568,7 @@ public final class WageCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details1.date.getMonth(), month1);
             Assert.assertEquals(details1.date.getDayOfMonth(), 1);
 
-            final WageDetails details2 = wages.get(1);
+            final WageDetails details2 = salary.get(1);
             Assert.assertEquals(details2.personId, personId);
             Assert.assertEquals(details2.amountBy100, regularRate);    // 1 hour on regular rate
 

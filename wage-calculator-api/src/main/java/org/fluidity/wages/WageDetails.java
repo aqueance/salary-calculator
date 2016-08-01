@@ -3,8 +3,9 @@ package org.fluidity.wages;
 import java.time.LocalDate;
 
 /**
- * Represents a monthly wage for a person.
+ * Represents a monthly salary for a person.
  */
+@SuppressWarnings("WeakerAccess")
 public final class WageDetails {
 
     public final String personId;

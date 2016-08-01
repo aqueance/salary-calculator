@@ -11,7 +11,7 @@ import org.fluidity.wages.WageCalculator;
 
 /**
  * Turns the settings in a {@link WageCalculator.Settings} object into a format that is directly palatable to the {@link
- * org.fluidity.wages.impl.WageCalculatorPipeline}.
+ * WageCalculatorPipeline}.
  */
 @Component
 final class WageCalculatorSettingsImpl implements WageCalculatorSettings {

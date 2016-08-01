@@ -6,28 +6,28 @@ import java.util.function.Consumer;
 import org.fluidity.foundation.Configuration;
 
 /**
- * A pipeline that takes a stream of work shift details and emits a stream of monthly wages.
+ * A pipeline that takes a stream of work shift details and emits a stream of monthly salaries.
  * <p>
  * Create an instance using {@link WageCalculator.Factory#create(Consumer)}, and pass the stream of {@link ShiftDetails} objects to it. When done, make sure
- * that {@link AutoCloseable#close()} is invoked on the instance. The stream of {@link WageDetails} objects will be sent to the consumer used to create the
- * instance with.
- * <p>
- * The stream of {@link WageDetails} objects will be emitted in an order sorted by person name and date.
+ * that {@link AutoCloseable#close()} is invoked on the instance. The stream of {@link WageDetails} objects will be sent, in an order sorted by person name
+ * and date, to the consumer the instance was created with.
  * <p>
  * Example:
  * <pre>
- *     WageCalculator.Factory factory = &hellip;;
+ *     SalaryCalculator.Factory factory = &hellip;;
  *     &hellip;
  *     final List&lt;ShiftDetails&gt; shifts = &hellip;;
  *
- *     try (final WageCalculator calculator = factory.create(System.out::println)) {
+ *     try (final Processor&lt;ShiftDetails&gt; calculator = factory.create(System.out::println)) {
  *         shifts.forEach(calculator);
  *     }
  * </pre>
  * The implementation of the {@link WageCalculator.Factory} interface is a
  * <a href="https://github.com/aqueance/fluid-tools/wiki/User%20Guide%20-%20Overview#components">dependency injected component</a>.
  */
-public interface WageCalculator extends Consumer<ShiftDetails>, AutoCloseable {
+public interface WageCalculator extends Processor<ShiftDetails> {
+
+    // no specific methods other than those inherited from Processor.
 
     /**
      * Creates new {@link WageCalculator} instances.
@@ -45,7 +45,7 @@ public interface WageCalculator extends Consumer<ShiftDetails>, AutoCloseable {
     }
 
     /**
-     * Configures the wage calculator with the time zone and the hourly rate levels.
+     * Configures the salary calculator with the time zone and the hourly rate levels.
      */
     interface Settings {
 
