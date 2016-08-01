@@ -1,31 +1,37 @@
 package org.fluidity.wages.cli;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.function.Consumer;
 
 import org.fluidity.composition.Component;
 import org.fluidity.deployment.cli.Application;
 import org.fluidity.foundation.Archives;
 import org.fluidity.wages.SalaryCalculator;
+import org.fluidity.wages.SalaryDetails;
 
 @Component
 final class SalariesCommand implements Application {
 
     private static final String NAME = "Monthly salary calculator";
 
-    private final CsvLineParser parser;
+    private final CsvParser parsers;
     private final SalaryCalculator.Factory calculators;
 
-    SalariesCommand(final CsvLineParser parser, final SalaryCalculator.Factory calculators) {
-        this.parser = parser;
+    SalariesCommand(final CsvParser parsers, final SalaryCalculator.Factory calculators) {
+        this.parsers = parsers;
         this.calculators = calculators;
     }
 
@@ -68,44 +74,81 @@ final class SalariesCommand implements Application {
             usage("too many arguments");
         }
 
+        final URL url;
+
         final String input = arguments[0];
-        final Path path = Paths.get(input);
 
-        if (!Files.exists(path)) {
-            usage("file not found: %s", path);
-            return;
-        }
+        {   // determine if the input is a file or an URL
+            final Path path = Paths.get(input);
+            if (Files.exists(path)) {
+                if (!Files.isReadable(path)) {
+                    usage("file not readable: %s", path);
+                    return;
+                }
 
-        if (!Files.isReadable(path)) {
-            usage("file not readable: %s", path);
-            return;
+                try {
+                    url = path.toUri().toURL();
+                } catch (final MalformedURLException error) {
+                    usage("conversion to URL failed: %s", path);
+                    error.printStackTrace(System.err);
+                    return;
+                }
+            } else {
+                try {
+                    url = new URL(input);
+                } catch (final MalformedURLException error) {
+                    usage("file not found: %s", path);
+                    return;
+                }
+            }
         }
 
         final Charset encoding;
 
-        if (arguments.length > 1) {
-            final String name = arguments[1];
+        {   // determine the character encoding to use
+            if (arguments.length > 1) {
+                        final String name = arguments[1];
 
-            try {
-                encoding = Charset.forName(name);
-            } catch (final UnsupportedCharsetException error) {
-                usage("unknown character encoding: %s", name);
-                return;
-            }
-        } else {
-            encoding = StandardCharsets.UTF_8;
+                        try {
+                            encoding = Charset.forName(name);
+                        } catch (final UnsupportedCharsetException error) {
+                            usage("unknown character encoding: %s", name);
+                            return;
+                        }
+                    } else {
+                        encoding = StandardCharsets.UTF_8;
+                    }
         }
 
-        // TODO: support URLs for the CSV
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(input), encoding))) {
-            try (final SalaryCalculator calculator = calculators.create(System.out::println)) {
-                reader.lines()
-                        .skip(1)        // skip the header
-                        .map(parser)    // TODO: use the header
-                        .forEach(calculator);
+        // Prints the list of people with their salaries, with a header to identify the month
+        final Consumer<SalaryDetails> printer = new Consumer<SalaryDetails>() {
+
+            // The current month.
+            private LocalDate month;
+
+            @Override
+            public void accept(final SalaryDetails details) {
+                if (month == null || !details.month.equals(month)) {
+                    month = details.month;
+
+                    System.out.printf("Salaries for %d/%d:%n", month.getMonthValue(), month.getYear());
+                }
+
+                System.out.printf(" %s, %s, %s%n", details.personId, details.personName, details.amount());
+            }
+        };
+
+        // This below is the actual logic; so far it was only preparation...
+
+        try {
+            final InputStream stream = url.openStream();
+            final Reader reader = new InputStreamReader(stream, encoding);
+
+            try (final BufferedReader content = new BufferedReader(reader); final SalaryCalculator calculator = calculators.create(printer)) {
+                content.lines().forEach(parsers.create(calculator));
             }
         } catch (final Exception error) {
-            usage("Error processing '%s': %s", path, error);
+            usage("Error processing '%s': %s", input, error);
             error.printStackTrace(System.err);
         }
     }

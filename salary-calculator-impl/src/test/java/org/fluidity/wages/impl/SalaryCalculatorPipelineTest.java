@@ -98,9 +98,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details.amountBy100, regularRate);    // 1 hour on regular rate
 
             // verify the month
-            Assert.assertEquals(details.date.getYear(), year);
-            Assert.assertEquals(details.date.getMonth(), month);
-            Assert.assertEquals(details.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details.month.getYear(), year);
+            Assert.assertEquals(details.month.getMonth(), month);
+            Assert.assertEquals(details.month.getDayOfMonth(), 1);
         });
     }
 
@@ -150,9 +150,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details.amountBy100, 2 * regularRate);    // 2 hours on regular rate
 
             // verify the month
-            Assert.assertEquals(details.date.getYear(), year);
-            Assert.assertEquals(details.date.getMonth(), month);
-            Assert.assertEquals(details.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details.month.getYear(), year);
+            Assert.assertEquals(details.month.getMonth(), month);
+            Assert.assertEquals(details.month.getDayOfMonth(), 1);
         });
     }
 
@@ -202,9 +202,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details.amountBy100, 2 * regularRate);    // 2 hours on regular rate
 
             // verify the month
-            Assert.assertEquals(details.date.getYear(), year);
-            Assert.assertEquals(details.date.getMonth(), month);
-            Assert.assertEquals(details.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details.month.getYear(), year);
+            Assert.assertEquals(details.month.getMonth(), month);
+            Assert.assertEquals(details.month.getDayOfMonth(), 1);
         });
     }
 
@@ -261,9 +261,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details.amountBy100, 3 * regularRate + eveningRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
             // verify the month
-            Assert.assertEquals(details.date.getYear(), year);
-            Assert.assertEquals(details.date.getMonth(), month);
-            Assert.assertEquals(details.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details.month.getYear(), year);
+            Assert.assertEquals(details.month.getMonth(), month);
+            Assert.assertEquals(details.month.getDayOfMonth(), 1);
         });
     }
 
@@ -316,9 +316,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details.amountBy100, regularRate + eveningRate);    // 1 hour on each rate
 
             // verify the month
-            Assert.assertEquals(details.date.getYear(), year);
-            Assert.assertEquals(details.date.getMonth(), month);
-            Assert.assertEquals(details.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details.month.getYear(), year);
+            Assert.assertEquals(details.month.getMonth(), month);
+            Assert.assertEquals(details.month.getDayOfMonth(), 1);
         });
     }
 
@@ -381,9 +381,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details.amountBy100, 3 * regularRate + eveningRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
             // verify the month
-            Assert.assertEquals(details.date.getYear(), year);
-            Assert.assertEquals(details.date.getMonth(), month);
-            Assert.assertEquals(details.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details.month.getYear(), year);
+            Assert.assertEquals(details.month.getMonth(), month);
+            Assert.assertEquals(details.month.getDayOfMonth(), 1);
         });
     }
 
@@ -446,9 +446,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details.amountBy100, 4 * regularRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
 
             // verify the month
-            Assert.assertEquals(details.date.getYear(), year);
-            Assert.assertEquals(details.date.getMonth(), month);
-            Assert.assertEquals(details.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details.month.getYear(), year);
+            Assert.assertEquals(details.month.getMonth(), month);
+            Assert.assertEquals(details.month.getDayOfMonth(), 1);
         });
     }
 
@@ -502,18 +502,18 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details1.amountBy100, regularRate);     // 1 hour on regular rate
 
             // verify the month
-            Assert.assertEquals(details1.date.getYear(), year);
-            Assert.assertEquals(details1.date.getMonth(), month);
-            Assert.assertEquals(details1.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details1.month.getYear(), year);
+            Assert.assertEquals(details1.month.getMonth(), month);
+            Assert.assertEquals(details1.month.getDayOfMonth(), 1);
 
             final SalaryDetails details2 = salary.get(0);               // salary records are sorted by person name
             Assert.assertEquals(details2.personId, personId2);
             Assert.assertEquals(details2.amountBy100, eveningRate);     // 1 hour on the evening rate
 
             // verify the month
-            Assert.assertEquals(details2.date.getYear(), year);
-            Assert.assertEquals(details2.date.getMonth(), month);
-            Assert.assertEquals(details2.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details2.month.getYear(), year);
+            Assert.assertEquals(details2.month.getMonth(), month);
+            Assert.assertEquals(details2.month.getDayOfMonth(), 1);
         });
     }
 
@@ -564,18 +564,18 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             Assert.assertEquals(details1.amountBy100, regularRate);    // 1 hour on regular rate
 
             // verify the month
-            Assert.assertEquals(details1.date.getYear(), year);
-            Assert.assertEquals(details1.date.getMonth(), month1);
-            Assert.assertEquals(details1.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details1.month.getYear(), year);
+            Assert.assertEquals(details1.month.getMonth(), month1);
+            Assert.assertEquals(details1.month.getDayOfMonth(), 1);
 
             final SalaryDetails details2 = salary.get(1);
             Assert.assertEquals(details2.personId, personId);
             Assert.assertEquals(details2.amountBy100, regularRate);    // 1 hour on regular rate
 
             // verify the month
-            Assert.assertEquals(details2.date.getYear(), year);
-            Assert.assertEquals(details2.date.getMonth(), month2);
-            Assert.assertEquals(details2.date.getDayOfMonth(), 1);
+            Assert.assertEquals(details2.month.getYear(), year);
+            Assert.assertEquals(details2.month.getMonth(), month2);
+            Assert.assertEquals(details2.month.getDayOfMonth(), 1);
         });
     }
 
