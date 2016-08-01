@@ -8,7 +8,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Wage Calculator Applications</name>
+    <name>Salary Calculator Applications</name>
 
     <prerequisites>
         <maven>3.1.0</maven>
@@ -110,7 +110,8 @@
     </build>
 
     <modules>
-        <module>wage-calculator-api</module>
-        <module>wage-calculator-impl</module>
+        <module>salary-calculator-api</module>
+        <module>salary-calculator-impl</module>
+        <module>salary-calculator-cli</module>
     </modules>
 </project>

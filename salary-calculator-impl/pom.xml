@@ -9,17 +9,17 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <groupId>org.fluidity.wages</groupId>
-    <artifactId>wage-calculator-impl</artifactId>
+    <artifactId>salary-calculator-impl</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Wage Calculator Implementation</name>
+    <name>Salary Calculator Implementation</name>
 
     <dependencies>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>wage-calculator-api</artifactId>
+            <artifactId>salary-calculator-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 

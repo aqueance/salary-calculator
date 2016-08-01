@@ -62,7 +62,7 @@ public interface SalaryCalculator extends Processor<ShiftDetails> {
          *
          * @return a list; never <code>null</code> or empty.
          */
-        @Configuration.Property(key = "regular.rates")
+        @Configuration.Property(key = "regular.rates", ids = "list")
         List<RegularRate> regularRates();
 
         /**
@@ -70,7 +70,7 @@ public interface SalaryCalculator extends Processor<ShiftDetails> {
          *
          * @return a list; never <code>null</code> or empty.
          */
-        @Configuration.Property(key = "overtime.rates")
+        @Configuration.Property(key = "overtime.rates", ids = "list")
         List<OvertimeRate> overtimeRates();
 
         /**
