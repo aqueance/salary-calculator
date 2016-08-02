@@ -36,7 +36,7 @@ final class CsvParser {
     /**
      * Creates a new instance with some settings.
      *
-     * @param configuration Encapsulates the settings.
+     * @param configuration encapsulates the settings.
      */
     CsvParser(final Configuration<Settings> configuration) {
         final Map<String, String> fields = configuration.settings().fields();
@@ -51,9 +51,9 @@ final class CsvParser {
     /**
      * Creates a new parser that sends parsed {@link ShiftDetails} objects to the given consumer.
      *
-     * @param consumer The object to send parsed lines to.
+     * @param consumer the object to send parsed lines to.
      *
-     * @return A consumer to feed CSV lines to.
+     * @return a consumer to feed CSV lines to.
      */
     Consumer<String> create(final Consumer<ShiftDetails> consumer) {
         return new Consumer<String>() {
@@ -93,9 +93,9 @@ final class CsvParser {
             /**
              * Takes a list of CSV field names (the CSV header) and maps each name to the constant defined in {@link FieldName}.
              *
-             * @param names The list of names read from the CSV header.
+             * @param names the list of names read from the CSV header.
              *
-             * @return An integer array that maps {@link FieldName} objects by their {@link Enum#ordinal()} to the index in the value list in a CSV
+             * @return an integer array that maps {@link FieldName} objects by their {@link Enum#ordinal()} to the index in the value list in a CSV
              * line.
              */
             private int[] fieldMap(final String[] names) {

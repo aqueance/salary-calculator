@@ -37,7 +37,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
 
     @Override
     public void flush() {
-        try (final Processor<WorkShift> processor = new ShiftStreamProcessor(settings, consumer)) {
+        try (final Processor<WorkShift> processor = new PersonMonthTracker(settings, consumer)) {
             shifts.forEach(processor);
         }
 
@@ -106,7 +106,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
      * A sorted stream allows working on one person at a time rather than
      * using a map to maintain state for all of them at the same time.
      */
-    private static final class ShiftStreamProcessor implements Processor<WorkShift> {
+    private static final class PersonMonthTracker implements Processor<WorkShift> {
 
         private final SalaryCalculatorSettings settings;
         private final Consumer<SalaryDetails> consumer;
@@ -119,9 +119,9 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
         /**
          * Creates a new instance.
          *
-         * @param consumer The consumer to send {@link SalaryDetails} objects to.
+         * @param consumer the consumer to send {@link SalaryDetails} objects to.
          */
-        private ShiftStreamProcessor(final SalaryCalculatorSettings settings, final Consumer<SalaryDetails> consumer) {
+        private PersonMonthTracker(final SalaryCalculatorSettings settings, final Consumer<SalaryDetails> consumer) {
             this.settings = settings;
             this.consumer = consumer;
         }
@@ -132,14 +132,14 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
                 flush();
 
                 person = new PersonDetails(shift);
-                tracker = new DailyShiftTracker(settings, new MonthlySalaryTracker(settings, this::reportSalary));
+
+                final Processor<ShiftSegment> salary = new MonthlySalaryTracker(settings, salaryBy100 -> this.consumer.accept(person.salary(salaryBy100)));
+                final Processor<WorkShift> segments = new DailyShiftSegments(settings, salary);
+
+                tracker = new DailyShiftsTracker(segments);
             }
 
             tracker.accept(shift);
-        }
-
-        private void reportSalary(final int salaryBy100) {
-            consumer.accept(person.salary(salaryBy100));
         }
 
         @Override
@@ -201,19 +201,20 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
      * Instances of this class track the hourly rates of a person during the day, including regular / evening rates and overtime rates. This is done by
      * accepting a list of work shift details sorted by date and producing the monthly salary when done.
      */
-    private static final class DailyShiftTracker implements Processor<WorkShift> {
+    private static final class DailyShiftsTracker implements Processor<WorkShift> {
+
+        private final Processor<WorkShift> consumer;
 
         // the day being processed
         private LocalDate currentDate = null;
-        private DailyShiftSegments segments;
 
         /**
          * Creates a new instance for the given person in the given month.
          *
          * @param consumer the processor for {@link ShiftSegment} objects.
          */
-        DailyShiftTracker(final SalaryCalculatorSettings settings, final Processor<ShiftSegment> consumer) {
-            this.segments = new DailyShiftSegments(settings, consumer);
+        DailyShiftsTracker(final Processor<WorkShift> consumer) {
+            this.consumer = consumer;
         }
 
         /**
@@ -229,25 +230,21 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
 
             if (currentDate != null && !shiftDate.equals(currentDate)) {
                 flush();
-                segments.reset();
             }
 
             currentDate = shiftDate;
-            segments.accept(shift);
+            consumer.accept(shift);
         }
 
         @Override
         public void flush() {
-            if (segments != null) {
-                segments.flush();
-            }
+            consumer.flush();
         }
 
         @Override
         public void close() {
             flush();
-
-            segments.close();
+            consumer.close();
         }
     }
 
@@ -372,7 +369,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
         /**
          * Returns the the regular hourly rate for this segment.
          *
-         * @return a number, always greter than <code>0</code>.
+         * @return a number, always greater than <code>0</code>.
          */
         int rateBy100() {
             return period.rateBy100;

@@ -76,48 +76,24 @@ final class SalariesCommand implements Application {
 
         final URL url;
 
-        final String input = arguments[0];
-
-        {   // determine if the input is a file or an URL
-            final Path path = Paths.get(input);
-            if (Files.exists(path)) {
-                if (!Files.isReadable(path)) {
-                    usage("file not readable: %s", path);
-                    return;
-                }
-
-                try {
-                    url = path.toUri().toURL();
-                } catch (final MalformedURLException error) {
-                    usage("conversion to URL failed: %s", path);
-                    error.printStackTrace(System.err);
-                    return;
-                }
-            } else {
-                try {
-                    url = new URL(input);
-                } catch (final MalformedURLException error) {
-                    usage("file not found: %s", path);
-                    return;
-                }
-            }
+        try {
+            url = inputURL(arguments[0]);
+        } catch (final IllegalStateException error) {
+            usage(error.getMessage());
+            error.printStackTrace(System.err);
+            return;
+        } catch (final IllegalArgumentException error) {
+            usage(error.getMessage());
+            return;
         }
 
         final Charset encoding;
 
-        {   // determine the character encoding to use
-            if (arguments.length > 1) {
-                        final String name = arguments[1];
-
-                        try {
-                            encoding = Charset.forName(name);
-                        } catch (final UnsupportedCharsetException error) {
-                            usage("unknown character encoding: %s", name);
-                            return;
-                        }
-                    } else {
-                        encoding = StandardCharsets.UTF_8;
-                    }
+        try {
+            encoding = arguments.length > 1 ? Charset.forName(arguments[1]) : StandardCharsets.UTF_8;
+        } catch (final UnsupportedCharsetException error) {
+            usage("unknown character encoding: %s", arguments[1]);
+            return;
         }
 
         // Prints the list of people with their salaries, with a header to identify the month
@@ -148,8 +124,40 @@ final class SalariesCommand implements Application {
                 content.lines().forEach(parsers.create(calculator));
             }
         } catch (final Exception error) {
-            usage("Error processing '%s': %s", input, error);
+            usage("Error processing '%s': %s", url, error);
             error.printStackTrace(System.err);
+        }
+    }
+
+    /**
+     * Returns an URL that corresponds to the input, which is either a local file or a valid URL.
+     *
+     * @param input a file name or an URL.
+     *
+     * @return an URL; never <code>null</code>.
+     *
+     * @throws IllegalArgumentException when the given input is a file but does not exist or not readable, or an invalid URL.
+     * @throws IllegalStateException    when the given input is a file but cannot be turned into an URL.
+     */
+    private URL inputURL(final String input) {
+        final Path path = Paths.get(input);
+
+        if (Files.exists(path)) {
+            if (!Files.isReadable(path)) {
+                throw new IllegalArgumentException(String.format("file not readable: %s", path));
+            }
+
+            try {
+                return path.toUri().toURL();
+            } catch (final MalformedURLException error) {
+                throw new IllegalStateException(String.format("conversion to URL failed: %s", path));
+            }
+        } else {
+            try {
+                return new URL(input);
+            } catch (final MalformedURLException error) {
+                throw new IllegalArgumentException(String.format("file not found: %s", path));
+            }
         }
     }
 }
