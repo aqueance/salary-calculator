@@ -18,16 +18,16 @@ import org.fluidity.foundation.Configuration;
  *     &hellip;
  *     final List&lt;ShiftDetails&gt; shifts = &hellip;;
  *
- *     try (final Processor&lt;ShiftDetails&gt; calculator = factory.create(System.out::println)) {
+ *     try (final BatchProcessor&lt;ShiftDetails&gt; calculator = factory.create(System.out::println)) {
  *         shifts.forEach(calculator);
  *     }
  * </pre>
  * The implementation of the {@link SalaryCalculator.Factory} interface is a
  * <a href="https://github.com/aqueance/fluid-tools/wiki/User%20Guide%20-%20Overview#components">dependency injected component</a>.
  */
-public interface SalaryCalculator extends Processor<ShiftDetails> {
+public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
 
-    // no specific methods other than those inherited from Processor.
+    // no specific methods other than those inherited from BatchProcessor.
 
     /**
      * Creates new {@link SalaryCalculator} instances.

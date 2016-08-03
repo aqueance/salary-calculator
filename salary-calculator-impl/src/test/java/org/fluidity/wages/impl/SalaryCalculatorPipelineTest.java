@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.fluidity.testing.Simulator;
-import org.fluidity.wages.Processor;
+import org.fluidity.wages.BatchProcessor;
 import org.fluidity.wages.SalaryCalculator;
 import org.fluidity.wages.SalaryDetails;
 import org.fluidity.wages.ShiftDetails;
@@ -49,7 +49,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         final List<SalaryDetails> salary = new ArrayList<>();
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 // empty
             }
 
@@ -87,7 +87,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -139,7 +139,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -191,7 +191,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -250,7 +250,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -305,7 +305,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -370,7 +370,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -435,7 +435,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -491,7 +491,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -553,7 +553,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final Processor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -580,6 +580,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     }
 
     // TODO: test the DST cut-overs
+    // TODO: test flushing the pipeline
 
     private static RegularRatePeriod regularRate(final int rate, final LocalTime begin, final LocalTime end) {
         return new RegularRatePeriod(rate, begin, end);

@@ -3,6 +3,7 @@ package org.fluidity.wages.impl;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.fluidity.composition.Component;
@@ -27,7 +28,7 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
 
         final List<SalaryCalculator.Settings.RegularRate> regularRates = settings.regularRates();
         assert regularRates != null;
-        this.regularRates = regularRatePeriods(regularRates);
+        this.regularRates = Collections.unmodifiableList(regularRatePeriods(regularRates));
 
         final int highestRegularRate = regularRates.stream().mapToInt(SalaryCalculator.Settings.RegularRate::rateBy100).max().orElse(0);
 
@@ -36,7 +37,7 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
 
         validateOvertimeRates(highestRegularRate, overtimeRates);
 
-        this.overtimeRates = overtimeRates;
+        this.overtimeRates = Collections.unmodifiableList(overtimeRates);
     }
 
     private List<RegularRatePeriod> regularRatePeriods(List<SalaryCalculator.Settings.RegularRate> rates) {
