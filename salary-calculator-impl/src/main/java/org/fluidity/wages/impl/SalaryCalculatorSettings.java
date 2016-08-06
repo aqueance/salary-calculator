@@ -29,5 +29,5 @@ interface SalaryCalculatorSettings {
      *
      * @return a list, never <code>null</code> but possibly empty.
      */
-    List<SalaryCalculator.Settings.OvertimeRate> overtimeRates();
+    List<OvertimeRate> overtimeRates();
 }

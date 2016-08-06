@@ -74,14 +74,22 @@ public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
         List<OvertimeRate> overtimeRates();
 
         /**
-         * Represents a regular hourly rate level. The regular rate applies during a specific interval, the first minute of which is returned by {@link
-         * #fromMinute()}. The first minute when this rate does not apply is given in the next instance in the list returned by {@link
-         * Settings#regularRates()}.
+         * Represents a regular hourly rate level. The regular rate applies during a specific interval, the first hour and minute of which are returned by
+         * {@link #fromHour()} and {@link #fromMinute()}, respectively. The first minute when this rate does not apply is given in the next instance in the list
+         * returned by {@link Settings#regularRates()}.
          */
         interface RegularRate {
 
             /**
-             * Specifies the first minute of the day at which this hourly rate level applies.
+             * Specifies the hour of the day at which this hourly rate level applies.
+             *
+             * @return a number of minutes; equal to or greater than <code>0</code>.
+             */
+            @Configuration.Property(key = "from.hour")
+            int fromHour();
+
+            /**
+             * Specifies the minute in the hour of the day returned by {@link #fromHour()}.
              *
              * @return a number of minutes; equal to or greater than <code>0</code>.
              */
@@ -103,9 +111,17 @@ public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
         interface OvertimeRate {
 
             /**
-             * Specifies the threshold in minutes over which this overtime rate applies.
+             * Specifies the number of hours after which this overtime rate applies.
              *
              * @return a number of minutes; greater than <code>0</code>.
+             */
+            @Configuration.Property(key = "threshold.minutes")
+            int thresholdHours();
+
+            /**
+             * Specifies the minutes in addition to {@link #thresholdHours()}.
+             *
+             * @return a number of minutes; equal to or greater than <code>0</code>.
              */
             @Configuration.Property(key = "threshold.minutes")
             int thresholdMinutes();

@@ -19,7 +19,7 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
 
     private final ZoneId timeZone;
     private final List<RegularRatePeriod> regularRates;
-    private final List<SalaryCalculator.Settings.OvertimeRate> overtimeRates;
+    private final List<OvertimeRate> overtimeRates;
 
     SalaryCalculatorSettingsImpl(final Configuration<SalaryCalculator.Settings> configuration) {
         final SalaryCalculator.Settings settings = configuration.settings();
@@ -35,9 +35,7 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
         final List<SalaryCalculator.Settings.OvertimeRate> overtimeRates = settings.overtimeRates();
         assert overtimeRates != null;
 
-        validateOvertimeRates(highestRegularRate, overtimeRates);
-
-        this.overtimeRates = Collections.unmodifiableList(overtimeRates);
+        this.overtimeRates = Collections.unmodifiableList(validateOvertimeRates(highestRegularRate, overtimeRates));
     }
 
     private List<RegularRatePeriod> regularRatePeriods(List<SalaryCalculator.Settings.RegularRate> rates) {
@@ -48,7 +46,7 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
         SalaryCalculator.Settings.RegularRate lastRate = rates.get(0);
 
         // make sure the first period starts at midnight
-        if (lastRate.fromMinute() > 0) {
+        if (lastRate.fromHour() + lastRate.fromMinute() > 0) {
             final int periodCount = rates.size();
 
             // the last hourly rate starting at midnight
@@ -82,16 +80,17 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
      * TODO
      *
      * @param lastRate TODO
-     * @param rates    TODO
+     * @param input    TODO
      *
      * @return TODO
      */
-    private int validateOvertimeRates(int lastRate, final List<SalaryCalculator.Settings.OvertimeRate> rates) {
-        int lastThreshold = 0;
+    private List<OvertimeRate> validateOvertimeRates(int lastRate, final List<SalaryCalculator.Settings.OvertimeRate> input) {
+        final List<OvertimeRate> output = new ArrayList<>(input.size());
 
-        for (final SalaryCalculator.Settings.OvertimeRate rate : rates) {
+        int lastThreshold = 0;
+        for (final SalaryCalculator.Settings.OvertimeRate rate : input) {
             final int currentRate = rate.rateBy100();
-            final int currentThreshold = rate.thresholdMinutes();
+            final int currentThreshold = rate.thresholdHours() * 60 + rate.thresholdMinutes();
 
             if (currentRate < lastRate) {
                 throw new IllegalArgumentException(String.format("Overtime rate %d is less than previous rate %d", currentRate, lastRate));
@@ -102,9 +101,11 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
             }
 
             lastRate = currentRate;
+
+            output.add(new OvertimeRate(rate.rateBy100(), rate.thresholdHours(), rate.thresholdMinutes()));
         }
 
-        return lastRate;
+        return output;
     }
 
     private SalaryCalculator.Settings.RegularRate regularRateFromMidnight(final int rate) {
@@ -116,6 +117,11 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
             }
 
             @Override
+            public int fromHour() {
+                return 0;
+            }
+
+            @Override
             public int fromMinute() {
                 return 0;
             }
@@ -123,11 +129,11 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
     }
 
     private RegularRatePeriod regularRatePeriod(final SalaryCalculator.Settings.RegularRate currentRate, final SalaryCalculator.Settings.RegularRate nextRate) {
-        return new RegularRatePeriod(currentRate.rateBy100(), localTime(currentRate.fromMinute()), localTime(nextRate.fromMinute()));
+        return new RegularRatePeriod(currentRate.rateBy100(), fromTime(currentRate), fromTime(nextRate));
     }
 
-    private static LocalTime localTime(final int minutes) {
-        return LocalTime.of(minutes / 60, minutes % 60);
+    private LocalTime fromTime(final SalaryCalculator.Settings.RegularRate rate) {
+        return LocalTime.of(rate.fromHour(), rate.fromMinute());
     }
 
     @Override
@@ -141,7 +147,7 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
     }
 
     @Override
-    public List<SalaryCalculator.Settings.OvertimeRate> overtimeRates() {
+    public List<OvertimeRate> overtimeRates() {
         return overtimeRates;
     }
 }

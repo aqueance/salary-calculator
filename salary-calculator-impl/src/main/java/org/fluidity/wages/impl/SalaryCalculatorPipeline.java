@@ -267,7 +267,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
     private static final class HourlyRateTracker implements BatchProcessor<ShiftSegment> {
 
         private final Consumer<Integer> next;
-        private final List<Settings.OvertimeRate> overtimeRates;
+        private final List<OvertimeRate> overtimeRates;
 
         private BatchState state;
 
@@ -292,15 +292,14 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
             while (payableMinutes > 0) {
 
                 // number of minutes over the next overtime threshold, if any
-                final int excessMinutes = state.overtimeLevel == null ? 0 : Math.max(0, state.totalMinutes - state.overtimeLevel.thresholdMinutes());
+                final int excessMinutes = state.overtimeLevel == null ? 0 : Math.max(0, state.totalMinutes - state.overtimeLevel.thresholdMinutes);
 
                 // what should be paid at the current rate
                 assert excessMinutes >= 0 : excessMinutes;
                 final int paidMinutes = Math.max(0, payableMinutes - excessMinutes);
 
                 // record the payment at the appropriate hourly rate
-                assert state.overtimeRate == 0 || state.overtimeRate > segment.rateBy100();
-                state.salaryBy6000 += paidMinutes * Math.max(state.overtimeRate, segment.rateBy100());
+                state.salaryBy6000 += paidMinutes * (state.overtimeRate > 0 ? state.overtimeRate : segment.rateBy100());
 
                 payableMinutes -= paidMinutes;
 
@@ -308,7 +307,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
                 if (excessMinutes > 0) {
 
                     // use the current overtime rate from now on
-                    state.overtimeRate = state.overtimeLevel.rateBy100();
+                    state.overtimeRate = state.overtimeLevel.rateBy100;
 
                     // update the current rate and the next threshold
                     state.overtimeLevel = state.overtimeRateIterator.hasNext() ? state.overtimeRateIterator.next() : null;
@@ -333,10 +332,10 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
         private final class BatchState {
 
             // The overtime rate levels to work with.
-            private Iterator<Settings.OvertimeRate> overtimeRateIterator;
+            private Iterator<OvertimeRate> overtimeRateIterator;
 
             // The most recent overtime rate; null means no (more) overtime level.
-            private Settings.OvertimeRate overtimeLevel;
+            private OvertimeRate overtimeLevel;
 
             // The overtime rate for the current overtime level (we start at the regular rates).
             private int overtimeRate = 0;

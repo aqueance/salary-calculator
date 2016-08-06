@@ -11,7 +11,6 @@ import java.util.List;
 
 import org.fluidity.testing.Simulator;
 import org.fluidity.wages.BatchProcessor;
-import org.fluidity.wages.SalaryCalculator;
 import org.fluidity.wages.SalaryDetails;
 import org.fluidity.wages.ShiftDetails;
 
@@ -20,7 +19,7 @@ import org.testng.annotations.Test;
 
 public final class SalaryCalculatorPipelineTest extends Simulator {
 
-    private SalaryCalculatorSettings settings(final String timeZone, final List<RegularRatePeriod> regular, final List<SalaryCalculator.Settings.OvertimeRate> overtime) {
+    private SalaryCalculatorSettings settings(final String timeZone, final List<RegularRatePeriod> regular, final List<OvertimeRate> overtime) {
         return new SalaryCalculatorSettings() {
             @Override
             public ZoneId timeZone() {
@@ -33,7 +32,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             }
 
             @Override
-            public List<SalaryCalculator.Settings.OvertimeRate> overtimeRates() {
+            public List<OvertimeRate> overtimeRates() {
                 return overtime;
             }
         };
@@ -223,13 +222,13 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
                                                            Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                       regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // overtime compensation:
                                                            //  $2.00 from 4 hours
                                                            //  $3.00 from 6 hours
-                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
-                                                                       overtimeRate(overtimeLevel2Rate, 6 * 60))
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4, 0),
+                                                                         overtimeRate(overtimeLevel2Rate, 6, 0))
         );
 
         final List<SalaryDetails> salary = new ArrayList<>();
@@ -279,7 +278,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
                                                            Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                       regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // no overtime
                                                            Collections.emptyList()
@@ -337,13 +336,13 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
                                                            Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                       regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // overtime compensation:
                                                            //  $2.00 from 4 hours
                                                            //  $3.00 from 6 hours
-                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
-                                                                       overtimeRate(overtimeLevel2Rate, 6 * 60))
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4, 0),
+                                                                         overtimeRate(overtimeLevel2Rate, 6, 0))
         );
 
         final List<SalaryDetails> salary = new ArrayList<>();
@@ -402,13 +401,13 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
                                                            Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                       regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // overtime compensation:
                                                            //  $2.00 from 4 hours
                                                            //  $3.00 from 6 hours
-                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4 * 60),
-                                                                       overtimeRate(overtimeLevel2Rate, 6 * 60))
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4, 0),
+                                                                         overtimeRate(overtimeLevel2Rate, 6, 0))
         );
 
         final List<SalaryDetails> salary = new ArrayList<>();
@@ -464,7 +463,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
                                                            Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                       regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // no overtime
                                                            Collections.emptyList()
@@ -586,17 +585,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         return new RegularRatePeriod(rate, begin, end);
     }
 
-    private static SalaryCalculator.Settings.OvertimeRate overtimeRate(final int rate, final int fromMinutes) {
-        return new SalaryCalculator.Settings.OvertimeRate() {
-            @Override
-            public int thresholdMinutes() {
-                return fromMinutes;
-            }
-
-            @Override
-            public int rateBy100() {
-                return rate;
-            }
-        };
+    private static OvertimeRate overtimeRate(final int rate, final int fromHours, final int fromMinutes) {
+        return new OvertimeRate(rate, fromHours, fromMinutes);
     }
 }
