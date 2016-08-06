@@ -19,11 +19,16 @@ import org.testng.annotations.Test;
 
 public final class SalaryCalculatorPipelineTest extends Simulator {
 
-    private SalaryCalculatorSettings settings(final String timeZone, final List<RegularRatePeriod> regular, final List<OvertimeRate> overtime) {
+    private SalaryCalculatorSettings settings(final String timeZone, final int baseRate, final List<RegularRatePeriod> regular, final List<OvertimePercent> overtime) {
         return new SalaryCalculatorSettings() {
             @Override
             public ZoneId timeZone() {
                 return ZoneId.of(timeZone);
+            }
+
+            @Override
+            public int baseRateBy100() {
+                return baseRate;
             }
 
             @Override
@@ -32,7 +37,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
             }
 
             @Override
-            public List<OvertimeRate> overtimeRates() {
+            public List<OvertimePercent> overtimeLevels() {
                 return overtime;
             }
         };
@@ -42,7 +47,8 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     @SuppressWarnings({ "EmptyTryBlock", "unused" })
     public void acceptsEmptyList() throws Exception {
         final SalaryCalculatorSettings settings = settings("Europe/Helsinki",
-                                                           Collections.singletonList(regularRate(100, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           100,
+                                                           Collections.singletonList(regularRate(0, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
                                                            Collections.emptyList());
 
         final List<SalaryDetails> salary = new ArrayList<>();
@@ -60,12 +66,13 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForOneHourShift() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
+        final int baseRate = 100;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 all day
-                                                           Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           Collections.singletonList(regularRate(0, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
 
                                                            // no overtime
                                                            Collections.emptyList()
@@ -94,7 +101,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
-            Assert.assertEquals(details.amountBy100, regularRate);    // 1 hour on regular rate
+            Assert.assertEquals(details.amountBy100, baseRate);    // 1 hour on regular rate
 
             // verify the month
             Assert.assertEquals(details.month.getYear(), year);
@@ -107,12 +114,13 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForTwoOneHourShifts() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
+        final int baseRate = 100;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 all day
-                                                           Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           Collections.singletonList(regularRate(0, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
 
                                                            // no overtime
                                                            Collections.emptyList()
@@ -146,7 +154,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
-            Assert.assertEquals(details.amountBy100, 2 * regularRate);    // 2 hours on regular rate
+            Assert.assertEquals(details.amountBy100, 2 * baseRate);    // 2 hours on regular rate
 
             // verify the month
             Assert.assertEquals(details.month.getYear(), year);
@@ -159,12 +167,13 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForOneHourShiftsInTwoDays() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
+        final int baseRate = 100;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 all day
-                                                           Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           Collections.singletonList(regularRate(0, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
 
                                                            // no overtime
                                                            Collections.emptyList()
@@ -198,7 +207,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
-            Assert.assertEquals(details.amountBy100, 2 * regularRate);    // 2 hours on regular rate
+            Assert.assertEquals(details.amountBy100, 2 * baseRate);    // 2 hours on regular rate
 
             // verify the month
             Assert.assertEquals(details.month.getYear(), year);
@@ -211,24 +220,25 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForTwoOvertimeLevelsWithinOneShift() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
-        final int eveningRate = 150;
+        final int baseRate = 100;
+        final int eveningRate = 50;
 
-        final int overtimeLevel1Rate = 200;
-        final int overtimeLevel2Rate = 300;
+        final int overtimeLevel1Percent = 20;
+        final int overtimeLevel2Percent = 30;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                          regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // overtime compensation:
-                                                           //  $2.00 from 4 hours
-                                                           //  $3.00 from 6 hours
-                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4, 0),
-                                                                         overtimeRate(overtimeLevel2Rate, 6, 0))
+                                                           //  +20% from 4 hours
+                                                           //  +30% from 6 hours
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Percent, 4, 0),
+                                                                         overtimeRate(overtimeLevel2Percent, 6, 0))
         );
 
         final List<SalaryDetails> salary = new ArrayList<>();
@@ -257,7 +267,11 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
-            Assert.assertEquals(details.amountBy100, 3 * regularRate + eveningRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
+            Assert.assertEquals(details.amountBy100,
+                                Math.round(3 * baseRate +
+                                           (baseRate + eveningRate) +
+                                           2 * ((float) (baseRate + eveningRate) + (float) baseRate * (float) overtimeLevel1Percent / (float) 100) +
+                                                (float) (baseRate + eveningRate) + (float) baseRate * (float) overtimeLevel2Percent / (float) 100));
 
             // verify the month
             Assert.assertEquals(details.month.getYear(), year);
@@ -270,14 +284,15 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForTwoShiftsOnDifferentRegularRates() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
-        final int eveningRate = 150;
+        final int baseRate = 100;
+        final int eveningRate = 50;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                          regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // no overtime
@@ -312,7 +327,8 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
-            Assert.assertEquals(details.amountBy100, regularRate + eveningRate);    // 1 hour on each rate
+            Assert.assertEquals(details.amountBy100, baseRate +
+                                                     baseRate + eveningRate);    // 1 hour on each rate
 
             // verify the month
             Assert.assertEquals(details.month.getYear(), year);
@@ -325,24 +341,25 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForTwoShiftsOnDifferentOvertimeRates() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
-        final int eveningRate = 150;
+        final int baseRate = 100;
+        final int eveningRate = 50;
 
-        final int overtimeLevel1Rate = 200;
-        final int overtimeLevel2Rate = 300;
+        final int overtimeLevel1Percent = 20;
+        final int overtimeLevel2Percent = 30;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                          regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // overtime compensation:
-                                                           //  $2.00 from 4 hours
-                                                           //  $3.00 from 6 hours
-                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4, 0),
-                                                                         overtimeRate(overtimeLevel2Rate, 6, 0))
+                                                           //  +20% from 4 hours
+                                                           //  +30% from 6 hours
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Percent, 4, 0),
+                                                                         overtimeRate(overtimeLevel2Percent, 6, 0))
         );
 
         final List<SalaryDetails> salary = new ArrayList<>();
@@ -377,7 +394,11 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
-            Assert.assertEquals(details.amountBy100, 3 * regularRate + eveningRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
+            Assert.assertEquals(details.amountBy100,
+                                Math.round(3 * baseRate +
+                                           (baseRate + eveningRate) +
+                                           2 * ((float) (baseRate + eveningRate) + (float) baseRate * (float) overtimeLevel1Percent / (float) 100) +
+                                           (float) (baseRate + eveningRate) + (float) baseRate * (float) overtimeLevel2Percent / (float) 100));
 
             // verify the month
             Assert.assertEquals(details.month.getYear(), year);
@@ -390,24 +411,25 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForTwoShiftsOnDifferentOvertimeRatesSkippingOneRegularLevel() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
-        final int eveningRate = 150;
+        final int baseRate = 100;
+        final int eveningRate = 50;
 
-        final int overtimeLevel1Rate = 200;
-        final int overtimeLevel2Rate = 300;
+        final int overtimeLevel1Percent = 20;
+        final int overtimeLevel2Percent = 30;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                          regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // overtime compensation:
-                                                           //  $2.00 from 4 hours
-                                                           //  $3.00 from 6 hours
-                                                           Arrays.asList(overtimeRate(overtimeLevel1Rate, 4, 0),
-                                                                         overtimeRate(overtimeLevel2Rate, 6, 0))
+                                                           //  +20% from 4 hours
+                                                           //  +30% from 6 hours
+                                                           Arrays.asList(overtimeRate(overtimeLevel1Percent, 4, 0),
+                                                                         overtimeRate(overtimeLevel2Percent, 6, 0))
         );
 
         final List<SalaryDetails> salary = new ArrayList<>();
@@ -442,7 +464,10 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details = salary.get(0);
             Assert.assertEquals(details.personId, personId);
-            Assert.assertEquals(details.amountBy100, 4 * regularRate + 2 * overtimeLevel1Rate + overtimeLevel2Rate);
+            Assert.assertEquals(details.amountBy100,
+                                Math.round(4 * baseRate +
+                                           2 * ((float) (baseRate + eveningRate) + (float) baseRate * (float) overtimeLevel1Percent / (float) 100) +
+                                           (float) (baseRate + eveningRate) + (float) baseRate * (float) overtimeLevel2Percent / (float) 100));
 
             // verify the month
             Assert.assertEquals(details.month.getYear(), year);
@@ -455,14 +480,15 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForTwoPeople() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
-        final int eveningRate = 150;
+        final int baseRate = 100;
+        final int eveningRate = 50;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(regularRate, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
                                                                          regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
 
                                                            // no overtime
@@ -498,7 +524,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details1 = salary.get(1);               // salary records are sorted by person name
             Assert.assertEquals(details1.personId, personId1);
-            Assert.assertEquals(details1.amountBy100, regularRate);     // 1 hour on regular rate
+            Assert.assertEquals(details1.amountBy100, baseRate);        // 1 hour on regular rate
 
             // verify the month
             Assert.assertEquals(details1.month.getYear(), year);
@@ -507,7 +533,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details2 = salary.get(0);               // salary records are sorted by person name
             Assert.assertEquals(details2.personId, personId2);
-            Assert.assertEquals(details2.amountBy100, eveningRate);     // 1 hour on the evening rate
+            Assert.assertEquals(details2.amountBy100, baseRate + eveningRate);     // 1 hour on the evening rate
 
             // verify the month
             Assert.assertEquals(details2.month.getYear(), year);
@@ -520,12 +546,13 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
     public void computesSalaryForTwoMonths() throws Exception {
         final String zoneName = "Europe/Helsinki";
 
-        final int regularRate = 100;
+        final int baseRate = 100;
 
         final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
 
                                                            // regular hours $1.00 all day
-                                                           Collections.singletonList(regularRate(regularRate, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+                                                           Collections.singletonList(regularRate(0, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
 
                                                            // no overtime
                                                            Collections.emptyList()
@@ -560,7 +587,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details1 = salary.get(0);
             Assert.assertEquals(details1.personId, personId);
-            Assert.assertEquals(details1.amountBy100, regularRate);    // 1 hour on regular rate
+            Assert.assertEquals(details1.amountBy100, baseRate);    // 1 hour on base rate
 
             // verify the month
             Assert.assertEquals(details1.month.getYear(), year);
@@ -569,7 +596,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
             final SalaryDetails details2 = salary.get(1);
             Assert.assertEquals(details2.personId, personId);
-            Assert.assertEquals(details2.amountBy100, regularRate);    // 1 hour on regular rate
+            Assert.assertEquals(details2.amountBy100, baseRate);    // 1 hour on base rate
 
             // verify the month
             Assert.assertEquals(details2.month.getYear(), year);
@@ -585,7 +612,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         return new RegularRatePeriod(rate, begin, end);
     }
 
-    private static OvertimeRate overtimeRate(final int rate, final int fromHours, final int fromMinutes) {
-        return new OvertimeRate(rate, fromHours, fromMinutes);
+    private static OvertimePercent overtimeRate(final int rate, final int fromHours, final int fromMinutes) {
+        return new OvertimePercent(rate, fromHours, fromMinutes);
     }
 }

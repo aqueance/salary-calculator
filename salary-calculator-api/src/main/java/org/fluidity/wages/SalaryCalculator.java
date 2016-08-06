@@ -58,6 +58,14 @@ public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
         String timeZone();
 
         /**
+         * Specifies the base hourly rate multiplies by 100 (the dollar amount precision) to which other compensations are added.
+         *
+         * @return a number; greater than <code>0</code>.
+         */
+        @Configuration.Property(key = "base.rate")
+        int baseRateBy100();
+
+        /**
          * The list of regular hourly rates during a day.
          *
          * @return a list; never <code>null</code> or empty.
@@ -70,8 +78,8 @@ public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
          *
          * @return a list; never <code>null</code> or empty.
          */
-        @Configuration.Property(key = "overtime.rates", ids = "list")
-        List<OvertimeRate> overtimeRates();
+        @Configuration.Property(key = "overtime.levels", ids = "list")
+        List<OvertimeLevel> overtimeLevels();
 
         /**
          * Represents a regular hourly rate level. The regular rate applies during a specific interval, the first hour and minute of which are returned by
@@ -97,7 +105,7 @@ public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
             int fromMinute();
 
             /**
-             * Specifies the hourly rate multiplied by 100.
+             * Specifies the additional hourly rate multiplied by 100.
              *
              * @return an integer; greater than <code>0</code>.
              */
@@ -108,7 +116,7 @@ public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
         /**
          * Represents an overtime rate level.
          */
-        interface OvertimeRate {
+        interface OvertimeLevel {
 
             /**
              * Specifies the number of hours after which this overtime rate applies.
@@ -127,12 +135,12 @@ public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
             int thresholdMinutes();
 
             /**
-             * Specifies the hourly rate multiplied by 100.
+             * Specifies the percent to multiply the hourly rate with.
              *
              * @return an integer; greater than <code>0</code>.
              */
-            @Configuration.Property(key = "rate.by.100")
-            int rateBy100();
+            @Configuration.Property(key = "percent")
+            int percent();
         }
     }
 }

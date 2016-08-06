@@ -18,6 +18,13 @@ interface SalaryCalculatorSettings {
     ZoneId timeZone();
 
     /**
+     * Specifies the base hourly rate multiplies by 100 (the dollar amount precision) to which other compensations are added.
+     *
+     * @return a number; greater than <code>0</code>.
+     */
+    int baseRateBy100();
+
+    /**
      * The list of regular hourly rates and the daily interval in which they apply.
      *
      * @return a list, never <code>null</code> or empty.
@@ -29,5 +36,5 @@ interface SalaryCalculatorSettings {
      *
      * @return a list, never <code>null</code> but possibly empty.
      */
-    List<OvertimeRate> overtimeRates();
+    List<OvertimePercent> overtimeLevels();
 }

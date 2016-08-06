@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.fluidity.composition.Component;
 import org.fluidity.foundation.Configuration;
@@ -18,24 +19,28 @@ import org.fluidity.wages.SalaryCalculator;
 final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
 
     private final ZoneId timeZone;
+    private final int baseRateBy100;
     private final List<RegularRatePeriod> regularRates;
-    private final List<OvertimeRate> overtimeRates;
+    private final List<OvertimePercent> overtimePercents;
 
     SalaryCalculatorSettingsImpl(final Configuration<SalaryCalculator.Settings> configuration) {
         final SalaryCalculator.Settings settings = configuration.settings();
 
         this.timeZone = ZoneId.of(settings.timeZone());
+        baseRateBy100 = settings.baseRateBy100();
 
         final List<SalaryCalculator.Settings.RegularRate> regularRates = settings.regularRates();
         assert regularRates != null;
         this.regularRates = Collections.unmodifiableList(regularRatePeriods(regularRates));
 
-        final int highestRegularRate = regularRates.stream().mapToInt(SalaryCalculator.Settings.RegularRate::rateBy100).max().orElse(0);
+        final List<SalaryCalculator.Settings.OvertimeLevel> overtimeLevels = settings.overtimeLevels();
+        assert overtimeLevels != null;
 
-        final List<SalaryCalculator.Settings.OvertimeRate> overtimeRates = settings.overtimeRates();
-        assert overtimeRates != null;
-
-        this.overtimeRates = Collections.unmodifiableList(validateOvertimeRates(highestRegularRate, overtimeRates));
+        this.overtimePercents = Collections.unmodifiableList(overtimeLevels.stream()
+                                                                     .map(rate -> new OvertimePercent(rate.percent(),
+                                                                                                      rate.thresholdHours(),
+                                                                                                      rate.thresholdMinutes()))
+                                                                     .collect(Collectors.toList()));
     }
 
     private List<RegularRatePeriod> regularRatePeriods(List<SalaryCalculator.Settings.RegularRate> rates) {
@@ -76,38 +81,6 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
         return periods;
     }
 
-    /**
-     * TODO
-     *
-     * @param lastRate TODO
-     * @param input    TODO
-     *
-     * @return TODO
-     */
-    private List<OvertimeRate> validateOvertimeRates(int lastRate, final List<SalaryCalculator.Settings.OvertimeRate> input) {
-        final List<OvertimeRate> output = new ArrayList<>(input.size());
-
-        int lastThreshold = 0;
-        for (final SalaryCalculator.Settings.OvertimeRate rate : input) {
-            final int currentRate = rate.rateBy100();
-            final int currentThreshold = rate.thresholdHours() * 60 + rate.thresholdMinutes();
-
-            if (currentRate < lastRate) {
-                throw new IllegalArgumentException(String.format("Overtime rate %d is less than previous rate %d", currentRate, lastRate));
-            } else if (currentThreshold < lastThreshold) {
-                throw new IllegalArgumentException(String.format("Overtime threshold minutes %d is less than previous threshold %d",
-                                                                 currentThreshold,
-                                                                 lastThreshold));
-            }
-
-            lastRate = currentRate;
-
-            output.add(new OvertimeRate(rate.rateBy100(), rate.thresholdHours(), rate.thresholdMinutes()));
-        }
-
-        return output;
-    }
-
     private SalaryCalculator.Settings.RegularRate regularRateFromMidnight(final int rate) {
         return new SalaryCalculator.Settings.RegularRate() {
 
@@ -142,12 +115,17 @@ final class SalaryCalculatorSettingsImpl implements SalaryCalculatorSettings {
     }
 
     @Override
+    public int baseRateBy100() {
+        return baseRateBy100;
+    }
+
+    @Override
     public List<RegularRatePeriod> regularRates() {
         return regularRates;
     }
 
     @Override
-    public List<OvertimeRate> overtimeRates() {
-        return overtimeRates;
+    public List<OvertimePercent> overtimeLevels() {
+        return overtimePercents;
     }
 }
