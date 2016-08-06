@@ -2,13 +2,13 @@ package org.fluidity.wages.impl;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.fluidity.composition.Component;
 import org.fluidity.wages.BatchProcessor;
@@ -59,7 +59,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
     /**
      * Keeps track of the person whose work shifts are currently being processed.
      */
-    private static class PersonDetails {
+    private static final class PersonDetails {
 
         private final String personId;
         private final String personName;
@@ -182,14 +182,11 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
         RegularRatesTracker(final SalaryCalculatorSettings settings, final BatchProcessor<ShiftSegment> next) {
             this.next = next;
 
-            final List<ShiftSegment> segments = new ArrayList<>();
-
-            settings.regularRates()
-                    .stream()
-                    .map(ShiftSegment::new)
-                    .forEach(segments::add);
-
-            this.segments = Collections.unmodifiableList(segments);
+            final int baseRateBy100 = settings.baseRateBy100();
+            this.segments = Collections.unmodifiableList(settings.regularRates()
+                                                                 .stream()
+                                                                 .map(period -> new ShiftSegment(baseRateBy100, period))
+                                                                 .collect(Collectors.toList()));
         }
 
         @Override
@@ -301,9 +298,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
                 final int paidMinutes = Math.max(0, payableMinutes - excessMinutes);
 
                 // record the payment at the appropriate hourly rate
-                state.salaryBy6000 += paidMinutes * (baseRateBy100 +
-                                                     segment.rateBy100() +
-                                                     Math.round((float) baseRateBy100 * (float) state.overtimePercent / (float) 100));
+                state.salaryBy6000 += paidMinutes * (segment.rateBy100() + Math.round((float) baseRateBy100 * (float) state.overtimePercent / (float) 100));
 
                 payableMinutes -= paidMinutes;
 
@@ -365,6 +360,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
 
         // The corresponding regular rate period.
         private final RegularRatePeriod period;
+        private final int rateBy100;
 
         // The number of minutes in this segment.
         private int minutes;
@@ -372,10 +368,12 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
         /**
          * Creates a new instance for the given regular rate period.
          *
-         * @param period the regular rate period.
+         * @param baseRateBy100 the base rate.
+         * @param period        the regular rate period.
          */
-        ShiftSegment(final RegularRatePeriod period) {
+        ShiftSegment(final int baseRateBy100, final RegularRatePeriod period) {
             this.period = period;
+            this.rateBy100 = baseRateBy100 + period.rateBy100;
         }
 
         /**
@@ -403,7 +401,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
          * @return a number, always greater than <code>0</code>.
          */
         int rateBy100() {
-            return period.rateBy100;
+            return rateBy100;
         }
 
         /**
