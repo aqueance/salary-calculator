@@ -15,8 +15,7 @@ import java.util.function.Consumer;
 public interface BatchProcessor<T> extends Consumer<T>, AutoCloseable {
 
     /**
-     * Signals the receiver that the caller has completed one batch. If the receiver is part of a pipeline, it must pass the signal on to any next stage(s) of
-     * that pipeline.
+     * Signals the receiver that the caller has completed one batch. The receiver must send its accumulated state to downstream consumers.
      */
     void flush();
 

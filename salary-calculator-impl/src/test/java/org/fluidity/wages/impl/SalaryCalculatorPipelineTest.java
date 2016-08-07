@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.fluidity.testing.Simulator;
 import org.fluidity.wages.BatchProcessor;
@@ -43,6 +44,18 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         };
     }
 
+    /**
+     * Creates a new subject to test.
+     *
+     * @param settings the settings to use.
+     * @param consumer the consumer to use.
+     *
+     * @return a new subject; never <code>null</code>.
+     */
+    private SalaryCalculatorPipeline createPipeline(final SalaryCalculatorSettings settings, final Consumer<SalaryDetails> consumer) {
+        return new SalaryCalculatorPipeline(new SalaryCalculatorPipeline.StageFactory(settings), settings, consumer);
+    }
+
     @Test
     @SuppressWarnings({ "EmptyTryBlock", "unused" })
     public void acceptsEmptyList() throws Exception {
@@ -54,7 +67,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         final List<SalaryDetails> salary = new ArrayList<>();
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 // empty
             }
 
@@ -93,7 +106,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -146,7 +159,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -199,7 +212,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -259,7 +272,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -319,7 +332,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -386,7 +399,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -456,7 +469,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -516,7 +529,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 
@@ -579,7 +592,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
         );
 
         verify(() -> {
-            try (final BatchProcessor<ShiftDetails> subject = new SalaryCalculatorPipeline(settings, salary::add)) {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
                 shifts.forEach(subject);
             }
 

@@ -31,6 +31,9 @@ final class WorkShift implements Comparable<WorkShift> {
         this.interval = LocalTimeInterval.of(details.begin, details.end).locate(details.date, timeZone);
     }
 
+    /*
+     * Sorts by month, person, date.
+     */
     @Override
     public int compareTo(final WorkShift that) {
         int result;
@@ -38,22 +41,31 @@ final class WorkShift implements Comparable<WorkShift> {
         if (this == that) {
             result = 0;
         } else {
-            result = this.personName.compareTo(that.personName);
+            result = month(this) - month(that);
 
             if (result == 0) {
-                result = this.personId.compareTo(that.personId);
+                result = this.personName.compareTo(that.personName);
 
                 if (result == 0) {
-                    result = this.date.compareTo(that.date);
+                    result = this.personId.compareTo(that.personId);
 
                     if (result == 0) {
-                        result = this.start().compareTo(that.start());
+                        result = this.date.compareTo(that.date);
+
+                        if (result == 0) {
+                            result = this.start().compareTo(that.start());
+                        }
                     }
                 }
             }
         }
 
         return result;
+    }
+
+    private int month(final WorkShift shift) {
+        final LocalDate date = shift.date;
+        return date.getYear() + date.getMonthValue();
     }
 
     /**
