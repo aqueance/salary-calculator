@@ -597,5 +597,101 @@ public final class SalaryCalculatorIntegrationTest extends SalaryCalculatorAbstr
         });
     }
 
-    // TODO: test flushing the pipeline
+    @Test
+    public void computesSalaryForTwoMonthsWithFlushing() throws Exception {
+        final String zoneName = "Europe/Helsinki";
+
+        final int baseRate = 100;
+
+        final SalaryCalculatorSettings settings = settings(zoneName,
+                                                           baseRate,
+
+                                                           // regular hours $1.00 all day
+                                                           Collections.singletonList(regularRate(0, LocalTime.MIDNIGHT, LocalTime.MIDNIGHT)),
+
+                                                           // no overtime
+                                                           Collections.emptyList()
+        );
+
+        final List<SalaryDetails> salary = new ArrayList<>();
+
+        final int year = 2000;
+        final Month month1 = Month.JANUARY;
+        final Month month2 = Month.FEBRUARY;
+        final String personId = "1";
+
+        final List<ShiftDetails> shifts1 = Arrays.asList(
+                new ShiftDetails(personId,
+                                 "John Doe",
+                                 LocalDate.of(year, month1, 1),
+                                 LocalTime.of(12, 0),
+                                 LocalTime.of(13, 0)),
+                new ShiftDetails(personId,
+                                 "John Doe",
+                                 LocalDate.of(year, month1, 2),
+                                 LocalTime.of(14, 0),
+                                 LocalTime.of(15, 0))
+        );
+
+        final List<ShiftDetails> shifts2 = Arrays.asList(
+                new ShiftDetails(personId,
+                                 "John Doe",
+                                 LocalDate.of(year, month2, 1),
+                                 LocalTime.of(12, 0),
+                                 LocalTime.of(13, 0)),
+                new ShiftDetails(personId,
+                                 "John Doe",
+                                 LocalDate.of(year, month2, 2),
+                                 LocalTime.of(14, 0),
+                                 LocalTime.of(15, 0))
+        );
+
+        verify(() -> {
+            try (final BatchProcessor<ShiftDetails> subject = createPipeline(settings, salary::add)) {
+
+                // send the second month
+                shifts1.forEach(subject);
+
+                // get the results
+                subject.flush();
+
+                // test the results
+                Assert.assertEquals(salary.size(), 1);
+
+                final SalaryDetails details1 = salary.get(0);
+                Assert.assertEquals(details1.personId, personId);
+                Assert.assertEquals(details1.amountBy100, 2 * baseRate);    // 2 hour on base rate
+
+                // verify the month
+                Assert.assertEquals(details1.month.getYear(), year);
+                Assert.assertEquals(details1.month.getMonth(), month1);
+                Assert.assertEquals(details1.month.getDayOfMonth(), 1);
+
+                salary.clear();
+
+                // send the second month
+                shifts2.forEach(subject);
+
+                // get the results
+                subject.flush();
+
+                // test the results
+                Assert.assertEquals(salary.size(), 1);
+
+                final SalaryDetails details2 = salary.get(0);
+                Assert.assertEquals(details2.personId, personId);
+                Assert.assertEquals(details2.amountBy100, 2 * baseRate);    // 2 hour on base rate
+
+                // verify the month
+                Assert.assertEquals(details2.month.getYear(), year);
+                Assert.assertEquals(details2.month.getMonth(), month2);
+                Assert.assertEquals(details2.month.getDayOfMonth(), 1);
+
+                salary.clear();
+            }
+
+            // should not have any more results
+            Assert.assertTrue(salary.isEmpty());
+        });
+    }
 }
