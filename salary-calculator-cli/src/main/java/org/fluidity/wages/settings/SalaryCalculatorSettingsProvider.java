@@ -7,6 +7,10 @@ import org.fluidity.composition.Component;
 import org.fluidity.foundation.ClassLoaders;
 import org.fluidity.foundation.spi.PropertyProvider;
 
+/**
+ * Loads a .properties file from the class path and makes it available to Fluid Tools' <a
+ * href="https://github.com/aqueance/fluid-tools/wiki/User%20Guide%20-%20Foundation#configuration">configuration</a> facility.
+ */
 @Component
 final class SalaryCalculatorSettingsProvider implements PropertyProvider {
 
@@ -19,7 +23,7 @@ final class SalaryCalculatorSettingsProvider implements PropertyProvider {
     }
 
     @Override
-    public Object property(final String key) {
+    public String property(final String key) {
         return properties.getProperty(key);
     }
 }

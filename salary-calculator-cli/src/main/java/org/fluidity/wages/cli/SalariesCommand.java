@@ -79,8 +79,8 @@ final class SalariesCommand implements Application {
         try {
             url = inputURL(arguments[0]);
         } catch (final IllegalStateException error) {
-            usage(error.getMessage());
             error.printStackTrace(System.err);
+            usage(null);
             return;
         } catch (final IllegalArgumentException error) {
             usage(error.getMessage());
@@ -96,7 +96,7 @@ final class SalariesCommand implements Application {
             return;
         }
 
-        // Prints the list of people with their salaries, with a header to identify the month
+        // Prints the list of people with their salaries, under a header that identifies the month
         final Consumer<SalaryDetails> printer = new Consumer<SalaryDetails>() {
 
             // The current month.
@@ -107,14 +107,16 @@ final class SalariesCommand implements Application {
                 if (month == null || !details.month.equals(month)) {
                     month = details.month;
 
+                    // The month header
                     System.out.printf("Salaries for %d/%d:%n", month.getMonthValue(), month.getYear());
                 }
 
+                // The person's salary details.
                 System.out.printf(" %s, %s, %s%n", details.personId, details.personName, details.amount());
             }
         };
 
-        // This below is the actual logic; so far it was only preparation...
+        // This below is the actual logic; up to here we were just preparing for this...
 
         try {
             final InputStream stream = url.openStream();
