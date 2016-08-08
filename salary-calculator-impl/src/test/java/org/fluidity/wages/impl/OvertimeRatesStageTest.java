@@ -13,7 +13,7 @@ import org.fluidity.wages.BatchProcessor;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class OvertimeRatesStageTest extends SalaryCalculatorPipelineAbstractTest {
+public class OvertimeRatesStageTest extends SalaryCalculatorAbstractTest {
 
     @Test
     public void testNoOvertimeRate() throws Exception {

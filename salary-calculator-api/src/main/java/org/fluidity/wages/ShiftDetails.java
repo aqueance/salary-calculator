@@ -5,6 +5,8 @@ import java.time.LocalTime;
 
 /**
  * Represents a single work shift.
+ * <p>
+ * This is an immutable value type.
  */
 public final class ShiftDetails {
 

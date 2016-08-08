@@ -27,7 +27,7 @@ import org.fluidity.foundation.Configuration;
  */
 public interface SalaryCalculator extends BatchProcessor<ShiftDetails> {
 
-    // no specific methods other than those inherited from BatchProcessor.
+    // no specific methods other than those inherited from the extended interfaces
 
     /**
      * Creates new {@link SalaryCalculator} instances.

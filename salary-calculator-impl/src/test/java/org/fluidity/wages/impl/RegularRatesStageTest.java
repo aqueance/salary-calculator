@@ -9,12 +9,11 @@ import java.util.Collections;
 import java.util.function.Consumer;
 
 import org.fluidity.wages.BatchProcessor;
-import org.fluidity.wages.ShiftDetails;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class RegularRatesStageTest extends SalaryCalculatorPipelineAbstractTest {
+public class RegularRatesStageTest extends SalaryCalculatorAbstractTest {
 
     @Test
     public void testSingleRateOneHourShiftInMiddle() throws Exception {

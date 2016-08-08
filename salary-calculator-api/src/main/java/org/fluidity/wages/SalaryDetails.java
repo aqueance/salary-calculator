@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 /**
  * Represents a monthly salary for a person.
+ * <p>
+ * This is an immutable value type.
  */
 @SuppressWarnings("WeakerAccess")
 public final class SalaryDetails {

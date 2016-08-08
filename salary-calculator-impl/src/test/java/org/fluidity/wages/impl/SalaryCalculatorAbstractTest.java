@@ -9,7 +9,7 @@ import org.fluidity.testing.Simulator;
 import org.fluidity.wages.ShiftDetails;
 
 @SuppressWarnings("WeakerAccess")
-abstract class SalaryCalculatorPipelineAbstractTest extends Simulator {
+abstract class SalaryCalculatorAbstractTest extends Simulator {
 
     protected SalaryCalculatorPipeline.StageFactory createStageFactory(final SalaryCalculatorSettings settings) {
         return new SalaryCalculatorPipeline.StageFactory(settings);

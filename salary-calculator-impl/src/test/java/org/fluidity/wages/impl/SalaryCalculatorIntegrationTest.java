@@ -16,7 +16,7 @@ import org.fluidity.wages.ShiftDetails;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public final class SalaryCalculatorPipelineIntegrationTest extends SalaryCalculatorPipelineAbstractTest {
+public final class SalaryCalculatorIntegrationTest extends SalaryCalculatorAbstractTest {
 
     /**
      * Creates a new subject to test.
@@ -597,6 +597,5 @@ public final class SalaryCalculatorPipelineIntegrationTest extends SalaryCalcula
         });
     }
 
-    // TODO: test the DST cut-overs
     // TODO: test flushing the pipeline
 }
