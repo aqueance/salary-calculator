@@ -15,8 +15,8 @@ import java.time.temporal.ChronoUnit;
  */
 final class LocalTimeInterval {
 
-    private final LocalTime begin;
-    private final LocalTime end;
+    final LocalTime begin;
+    final LocalTime end;
 
     /**
      * Creates a new instance by specifying the beginning and the end of the time interval.

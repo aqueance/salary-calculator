@@ -1,6 +1,7 @@
 package org.fluidity.wages.impl;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 
 import org.fluidity.composition.Component;
@@ -48,32 +50,27 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
 
     @Override
     public void flush() {
-        final Consumer<Integer> consumer = amountBy100 -> {
-            if (person != null) {
-                person.addSalary(amountBy100);
-            }
-        };
+        final IntConsumer stage3 = amountBy100 -> person.addSalary(amountBy100);
+        final BatchProcessor<ShiftSegment> stage2 = stages.createOvertimeRatesStage(stage3);
+        final BatchProcessor<WorkShift> stage1 = stages.createRegularRatesStage(stage2);
 
-        try (final BatchProcessor<ShiftSegment> dailySalary = stages.createDailySalaryStage(consumer);
-             final BatchProcessor<WorkShift> hourlyRates = stages.createHourlyRatesStage(dailySalary)) {
-
+        try (final BatchProcessor<WorkShift> pipeline = new MultiStagePipeline<>(stage1, stage2)) {
             shifts.forEach(shift -> {
                 final int day = shift.date.getDayOfMonth();
 
-                final boolean monthOrPersonBoundary = this.person == null || !this.person.matches(shift);
-                final boolean dayBoundary = monthOrPersonBoundary || day != this.day;
+                final boolean atMonthOrPersonBoundary = this.person == null || !this.person.matches(shift);
+                final boolean atDayBoundary = atMonthOrPersonBoundary || day != this.day;
 
                 // this must be handled first as the smaller granularity
-                if (dayBoundary) {
+                if (atDayBoundary) {
                     if (this.day > 0) {
-                        hourlyRates.flush();
-                        dailySalary.flush();
+                        pipeline.flush();
                     }
 
                     this.day = day;
                 }
 
-                if (monthOrPersonBoundary) {
+                if (atMonthOrPersonBoundary) {
                     if (this.person != null) {
                         this.consumer.accept(this.person.salary());
                     }
@@ -81,15 +78,12 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
                     this.person = new PersonDetails(shift);
                 }
 
-                hourlyRates.accept(shift);
+                pipeline.accept(shift);
             });
 
             if (this.person != null) {
                 assert this.day > 0;
-
-                hourlyRates.flush();
-                dailySalary.flush();
-
+                pipeline.flush();
                 this.consumer.accept(this.person.salary());
             }
         }
@@ -127,8 +121,8 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
          *
          * @return a new processor; never <code>null</code>.
          */
-        BatchProcessor<WorkShift> createHourlyRatesStage(final Consumer<ShiftSegment> consumer) {
-            return new RegularRatesTracker(settings, consumer);
+        BatchProcessor<WorkShift> createRegularRatesStage(final Consumer<ShiftSegment> consumer) {
+            return new RegularRatesStage(settings, consumer);
         }
 
         /**
@@ -138,8 +132,47 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
          *
          * @return a new processor; never <code>null</code>.
          */
-        BatchProcessor<ShiftSegment> createDailySalaryStage(final Consumer<Integer> consumer) {
-            return new OvertimeRatesTracker(settings, consumer);
+        BatchProcessor<ShiftSegment> createOvertimeRatesStage(final IntConsumer consumer) {
+            return new OvertimeRatesStage(settings, consumer);
+        }
+    }
+
+    /**
+     * Broadcasts the {@link BatchProcessor#flush()} and {@link BatchProcessor#close()} methods to a list of {@link BatchProcessor} instances in sequence.
+     *
+     * @param <T> the consumer type of the first instance.
+     */
+    private static class MultiStagePipeline<T> implements BatchProcessor<T> {
+
+        private final BatchProcessor<T> stage1;
+        private final BatchProcessor[] rest;
+
+        MultiStagePipeline(final BatchProcessor<T> stage1, final BatchProcessor ...rest) {
+            this.stage1 = stage1;
+            this.rest = rest;
+        }
+
+        @Override
+        public void flush() {
+            stage1.flush();
+
+            for (final BatchProcessor stage : rest) {
+                stage.flush();
+            }
+        }
+
+        @Override
+        public void close() {
+            stage1.close();
+
+            for (final BatchProcessor stage : rest) {
+                stage.close();
+            }
+        }
+
+        @Override
+        public void accept(final T shift) {
+            stage1.accept(shift);
         }
     }
 
@@ -199,30 +232,40 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
      * Computes the overlap between the daily shifts of a person and the regular hourly rate periods. For each regular rate period, there is a shift segment
      * that maintains the number of minutes it overlaps with the daily shifts, and the hourly rate for those minutes.
      */
-    private static final class RegularRatesTracker implements BatchProcessor<WorkShift> {
+    private static final class RegularRatesStage implements BatchProcessor<WorkShift> {
 
         private final Consumer<ShiftSegment> next;
         private final List<ShiftSegment> segments;
 
-        RegularRatesTracker(final SalaryCalculatorSettings settings, final Consumer<ShiftSegment> next) {
+        private boolean dirty;
+
+        RegularRatesStage(final SalaryCalculatorSettings settings, final Consumer<ShiftSegment> next) {
             this.next = next;
 
-            final int baseRateBy100 = settings.baseRateBy100();
-            this.segments = Collections.unmodifiableList(settings.regularRates()
-                                                                 .stream()
-                                                                 .map(period -> new ShiftSegment(baseRateBy100, period))
+            final List<RegularRatePeriod> periods = settings.regularRates();
+            assert !periods.isEmpty();
+            assert periods.get(0).interval.begin.equals(LocalTime.MIDNIGHT) : periods.get(0).interval.begin;
+            assert periods.get(periods.size() - 1).interval.end.equals(LocalTime.MIDNIGHT) : periods.get(periods.size() - 1).interval.end;
+
+            this.segments = Collections.unmodifiableList(periods.stream()
+                                                                 .map(ShiftSegment::new)
                                                                  .collect(Collectors.toList()));
         }
 
         @Override
         public void accept(final WorkShift shift) {
             segments.forEach(segment -> segment.accept(shift));
+            dirty = true;
         }
 
         @Override
         public void flush() {
-            segments.forEach(next);
-            segments.forEach(ShiftSegment::reset);
+            if (dirty) {
+                segments.forEach(next);
+                segments.forEach(ShiftSegment::reset);
+
+                dirty = false;
+            }
         }
 
         @Override
@@ -234,9 +277,9 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
     /**
      * Calculates the monthly salary from the consumed daily shifts.
      */
-    private static final class OvertimeRatesTracker implements BatchProcessor<ShiftSegment> {
+    private static final class OvertimeRatesStage implements BatchProcessor<ShiftSegment> {
 
-        private final Consumer<Integer> next;
+        private final IntConsumer next;
         private final int baseRateBy100;
         private final List<OvertimePercent> overtimePercents;
 
@@ -247,16 +290,19 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
          *
          * @param next the consumer for the computed salary.
          */
-        OvertimeRatesTracker(final SalaryCalculatorSettings settings, final Consumer<Integer> next) {
+        OvertimeRatesStage(final SalaryCalculatorSettings settings, final IntConsumer next) {
             this.next = next;
             this.overtimePercents = settings.overtimeLevels();
             this.baseRateBy100 = settings.baseRateBy100();
-            this.state = new BatchState();
         }
 
         @Override
         public void accept(final ShiftSegment segment) {
             int payableMinutes = segment.minutes();
+
+            if (state == null) {
+                state = new BatchState();
+            }
 
             state.totalMinutes += payableMinutes;
 
@@ -271,7 +317,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
                 final int paidMinutes = Math.max(0, payableMinutes - excessMinutes);
 
                 // record the payment at the appropriate hourly rate
-                state.salaryBy6000 += paidMinutes * (segment.rateBy100() + Math.round((float) baseRateBy100 * (float) state.overtimePercent / (float) 100));
+                state.salaryBy6000 += paidMinutes * (baseRateBy100 + segment.rateBy100() + Math.round((float) baseRateBy100 * (float) state.overtimePercent / (float) 100));
 
                 payableMinutes -= paidMinutes;
 
@@ -289,8 +335,10 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
 
         @Override
         public void flush() {
-            next.accept(Math.round((float) state.salaryBy6000 / (float) 60));
-            state = new BatchState();
+            if (state != null) {
+                next.accept(Math.round((float) state.salaryBy6000 / (float) 60));
+                state = null;
+            }
         }
 
         @Override
@@ -329,11 +377,10 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
      * A shift segment is the total number of minutes in some regular rate period that overlap a list of daily work shifts, along with the applicable regular
      * rate.
      */
-    private static final class ShiftSegment implements Consumer<WorkShift> {
+    static final class ShiftSegment implements Consumer<WorkShift> {
 
         // The corresponding regular rate period.
         private final RegularRatePeriod period;
-        private final int rateBy100;
 
         // The number of minutes in this segment.
         private int minutes;
@@ -341,12 +388,10 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
         /**
          * Creates a new instance for the given regular rate period.
          *
-         * @param baseRateBy100 the base rate.
          * @param period        the regular rate period.
          */
-        ShiftSegment(final int baseRateBy100, final RegularRatePeriod period) {
+        ShiftSegment(final RegularRatePeriod period) {
             this.period = period;
-            this.rateBy100 = baseRateBy100 + period.rateBy100;
         }
 
         /**
@@ -374,7 +419,7 @@ final class SalaryCalculatorPipeline implements SalaryCalculator {
          * @return a number, always greater than <code>0</code>.
          */
         int rateBy100() {
-            return rateBy100;
+            return period.rateBy100;
         }
 
         /**

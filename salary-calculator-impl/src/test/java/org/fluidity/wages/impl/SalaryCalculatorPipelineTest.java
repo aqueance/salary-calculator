@@ -3,14 +3,12 @@ package org.fluidity.wages.impl;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Month;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.fluidity.testing.Simulator;
 import org.fluidity.wages.BatchProcessor;
 import org.fluidity.wages.SalaryDetails;
 import org.fluidity.wages.ShiftDetails;
@@ -18,31 +16,7 @@ import org.fluidity.wages.ShiftDetails;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public final class SalaryCalculatorPipelineTest extends Simulator {
-
-    private SalaryCalculatorSettings settings(final String timeZone, final int baseRate, final List<RegularRatePeriod> regular, final List<OvertimePercent> overtime) {
-        return new SalaryCalculatorSettings() {
-            @Override
-            public ZoneId timeZone() {
-                return ZoneId.of(timeZone);
-            }
-
-            @Override
-            public int baseRateBy100() {
-                return baseRate;
-            }
-
-            @Override
-            public List<RegularRatePeriod> regularRates() {
-                return regular;
-            }
-
-            @Override
-            public List<OvertimePercent> overtimeLevels() {
-                return overtime;
-            }
-        };
-    }
+public final class SalaryCalculatorPipelineTest extends SalaryCalculatorPipelineAbstractTest {
 
     /**
      * Creates a new subject to test.
@@ -53,7 +27,7 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
      * @return a new subject; never <code>null</code>.
      */
     private SalaryCalculatorPipeline createPipeline(final SalaryCalculatorSettings settings, final Consumer<SalaryDetails> consumer) {
-        return new SalaryCalculatorPipeline(new SalaryCalculatorPipeline.StageFactory(settings), settings, consumer);
+        return new SalaryCalculatorPipeline(createStageFactory(settings), settings, consumer);
     }
 
     @Test
@@ -244,8 +218,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                           Arrays.asList(regularRate(eveningRate, LocalTime.MIDNIGHT, LocalTime.of(10, 0)),
+                                                                         regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.MIDNIGHT)),
 
                                                            // overtime compensation:
                                                            //  +20% from 4 hours
@@ -305,8 +280,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                           Arrays.asList(regularRate(eveningRate, LocalTime.MIDNIGHT, LocalTime.of(10, 0)),
+                                                                         regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.MIDNIGHT)),
 
                                                            // no overtime
                                                            Collections.emptyList()
@@ -365,8 +341,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                           Arrays.asList(regularRate(eveningRate, LocalTime.MIDNIGHT, LocalTime.of(10, 0)),
+                                                                         regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.MIDNIGHT)),
 
                                                            // overtime compensation:
                                                            //  +20% from 4 hours
@@ -435,8 +412,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                           Arrays.asList(regularRate(eveningRate, LocalTime.MIDNIGHT, LocalTime.of(10, 0)),
+                                                                         regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.MIDNIGHT)),
 
                                                            // overtime compensation:
                                                            //  +20% from 4 hours
@@ -501,8 +479,9 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
                                                            // regular hours $1.00 from 10:00 to 15:00
                                                            // evening hours $1.50 from 15:00 to 10:00
-                                                           Arrays.asList(regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
-                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.of(10, 0))),
+                                                           Arrays.asList(regularRate(eveningRate, LocalTime.MIDNIGHT, LocalTime.of(10, 0)),
+                                                                         regularRate(0, LocalTime.of(10, 0), LocalTime.of(15, 0)),
+                                                                         regularRate(eveningRate, LocalTime.of(15, 0), LocalTime.MIDNIGHT)),
 
                                                            // no overtime
                                                            Collections.emptyList()
@@ -620,12 +599,4 @@ public final class SalaryCalculatorPipelineTest extends Simulator {
 
     // TODO: test the DST cut-overs
     // TODO: test flushing the pipeline
-
-    private static RegularRatePeriod regularRate(final int rate, final LocalTime begin, final LocalTime end) {
-        return new RegularRatePeriod(rate, begin, end);
-    }
-
-    private static OvertimePercent overtimeRate(final int rate, final int fromHours, final int fromMinutes) {
-        return new OvertimePercent(rate, fromHours, fromMinutes);
-    }
 }
