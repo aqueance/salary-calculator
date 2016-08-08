@@ -16,7 +16,7 @@ import org.fluidity.wages.ShiftDetails;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public final class SalaryCalculatorPipelineTest extends SalaryCalculatorPipelineAbstractTest {
+public final class SalaryCalculatorPipelineIntegrationTest extends SalaryCalculatorPipelineAbstractTest {
 
     /**
      * Creates a new subject to test.
