@@ -110,7 +110,7 @@ final class SalaryCalculatorHandlerFactory implements Function<Vertx, Handler<Ro
                         future.complete(json);
                     };
 
-                    vertx.executeBlocking(logic, false, result -> {
+                    vertx.executeBlocking(logic, result -> {
                         response.putHeader("content-type", context.getAcceptableContentType() + "; charset=utf-8");
                         response.end(result.result().encode());
                     });

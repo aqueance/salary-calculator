@@ -1,7 +1,5 @@
 package org.fluidity.wages.http;
 
-import java.util.Arrays;
-
 import org.fluidity.composition.Component;
 import org.fluidity.composition.spi.ContainerTermination;
 import org.fluidity.deployment.cli.Application;
@@ -10,7 +8,6 @@ import org.fluidity.foundation.Log;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.StaticHandler;
 
 /**
  * TODO
@@ -21,12 +18,18 @@ final class SalaryCalculatorServer implements Application {
 
     static final int DEFAULT_PORT = 8080;
 
-    private final SalaryCalculatorHandlerFactory factory;
     private final ContainerTermination stopping;
     private final Log log;
 
-    SalaryCalculatorServer(final SalaryCalculatorHandlerFactory factory, final ContainerTermination stopping, final Log<SalaryCalculatorServer> log) {
-        this.factory = factory;
+    private final ResourceHandlerFactory resources;
+    private final SalaryCalculatorHandlerFactory calculator;
+
+    SalaryCalculatorServer(final SalaryCalculatorHandlerFactory calculator,
+                           final ResourceHandlerFactory resources,
+                           final ContainerTermination stopping,
+                           final Log<SalaryCalculatorServer> log) {
+        this.resources = resources;
+        this.calculator = calculator;
         this.stopping = stopping;
         this.log = log;
     }
@@ -38,10 +41,10 @@ final class SalaryCalculatorServer implements Application {
         final Router router = Router.router(vertx);
 
         // Computes salary from an uploaded CSV file.
-        router.post("/calculate").produces("application/json").handler(factory.apply(vertx));
+        router.post("/calculate").produces("application/json").handler(calculator.apply(vertx));
 
         // Serves the static files from src/main/resources/webroot that comprise the HTML client.
-        router.get().handler(StaticHandler.create());
+        router.get().handler(resources.apply(vertx));
 
         try {
             final String host = "localhost";        // hard-coded for now, as this is only a demo
