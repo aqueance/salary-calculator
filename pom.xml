@@ -112,6 +112,9 @@
     <modules>
         <module>salary-calculator-api</module>
         <module>salary-calculator-impl</module>
+        <module>salary-calculator-csv-support</module>
+        <module>salary-calculator-settings</module>
         <module>salary-calculator-cli</module>
+        <module>salary-calculator-http</module>
     </modules>
 </project>

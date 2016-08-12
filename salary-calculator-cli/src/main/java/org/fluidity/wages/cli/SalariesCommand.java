@@ -1,9 +1,6 @@
 package org.fluidity.wages.cli;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -19,20 +16,18 @@ import java.util.function.Consumer;
 import org.fluidity.composition.Component;
 import org.fluidity.deployment.cli.Application;
 import org.fluidity.foundation.Archives;
-import org.fluidity.wages.SalaryCalculator;
 import org.fluidity.wages.SalaryDetails;
+import org.fluidity.wages.csv.SalaryCalculator;
 
 @Component
 final class SalariesCommand implements Application {
 
     private static final String NAME = "Monthly salary calculator";
 
-    private final CsvParser parsers;
-    private final SalaryCalculator.Factory calculators;
+    private final SalaryCalculator calculator;
 
-    SalariesCommand(final CsvParser parsers, final SalaryCalculator.Factory calculators) {
-        this.parsers = parsers;
-        this.calculators = calculators;
+    SalariesCommand(final SalaryCalculator calculator) {
+        this.calculator = calculator;
     }
 
     private void usage(final String error, final Object... arguments) {
@@ -64,7 +59,7 @@ final class SalariesCommand implements Application {
         }
     }
 
-    public void run(final String[] arguments) {
+    public void run(final String... arguments) {
         if (arguments.length < 1) {
             usage("CSV file name missing");
             return;
@@ -119,12 +114,7 @@ final class SalariesCommand implements Application {
         // This below is the actual logic; up to here we were just preparing for this...
 
         try {
-            final InputStream stream = url.openStream();
-            final Reader reader = new InputStreamReader(stream, encoding);
-
-            try (final BufferedReader content = new BufferedReader(reader); final SalaryCalculator calculator = calculators.create(printer)) {
-                content.lines().forEach(parsers.create(calculator));
-            }
+            calculator.process(new InputStreamReader(url.openStream(), encoding), printer);
         } catch (final Exception error) {
             usage("Error processing '%s': %s", url, error);
             error.printStackTrace(System.err);

@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>wages</artifactId>
-        <groupId>org.fluidity</groupId>
-        <version>1.0-SNAPSHOT</version>
-    </parent>
+    <artifactId>wages</artifactId>
+    <groupId>org.fluidity</groupId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
     <groupId>org.fluidity.wages</groupId>
-    <artifactId>salary-calculator-cli</artifactId>
+    <artifactId>salary-calculator-http</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Salary Calculator App (CLI)</name>
+    <name>Salary Calculator App (HTTP)</name>
 
     <dependencies>
 
@@ -42,10 +40,40 @@
             <type>pom</type>
         </dependency>
 
+<!-- Proper logging, should you need one; else all messages go to stdout (without concurrency control)
         <dependency>
             <groupId>org.fluidity.platform</groupId>
-            <artifactId>logging-sink-impl</artifactId>
+            <artifactId>logging-slf4j-impl</artifactId>
             <version>${fluid.tools.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.21</version>
+        </dependency>
+-->
+
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web</artifactId>
+            <version>3.3.2</version>
+
+            <!-- drop some ballast -->
+            <exclusions>
+                <exclusion>
+                    <groupId>io.vertx</groupId>
+                    <artifactId>vertx-auth-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler-proxy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>
@@ -61,6 +89,12 @@
             <plugin>
                 <groupId>org.fluidity.platform</groupId>
                 <artifactId>standalone-jar-maven-plugin</artifactId>
+
+<!-- Uncomment this to produce a new artifact with the given classifier instead of overwriting the project artifact.
+                <configuration>
+                    <classifier>app</classifier>
+                </configuration>
+-->
 
                 <dependencies>
                     <dependency>

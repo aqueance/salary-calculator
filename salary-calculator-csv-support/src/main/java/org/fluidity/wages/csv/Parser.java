@@ -1,4 +1,4 @@
-package org.fluidity.wages.cli;
+package org.fluidity.wages.csv;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -22,7 +22,7 @@ import org.fluidity.wages.ShiftDetails;
  * configured with {@link Settings#fields()}.
  */
 @Component
-final class CsvParser {
+final class Parser {
 
     private static final DateTimeFormatter dates = DateTimeFormatter.ofPattern("d.M.yyyy");
     private static final DateTimeFormatter times = DateTimeFormatter.ofPattern("H:m");
@@ -38,8 +38,12 @@ final class CsvParser {
      *
      * @param configuration encapsulates the settings.
      */
-    CsvParser(final Configuration<Settings> configuration) {
+    Parser(final Configuration<Settings> configuration) {
         final Map<String, String> fields = configuration.settings().fields();
+
+        if (fields == null) {
+            throw new IllegalStateException("no configuration loaded");
+        }
 
         // Reverse mapping
         for (final Map.Entry<String, String> entry : fields.entrySet()) {
@@ -55,7 +59,7 @@ final class CsvParser {
      *
      * @return a consumer to feed CSV lines to.
      */
-    Consumer<String> create(final Consumer<ShiftDetails> consumer) {
+    public Consumer<String> create(final Consumer<ShiftDetails> consumer) {
         return new Consumer<String>() {
 
             private int[] fieldMap;
@@ -117,7 +121,7 @@ final class CsvParser {
                 // Maps the header field to a known field name.
                 for (int i = 0, ii = names.length; i < ii; i++) {
                     final String fieldName = names[i];
-                    final FieldName fieldConstant = CsvParser.this.fields.get(fieldName.toUpperCase());
+                    final FieldName fieldConstant = Parser.this.fields.get(fieldName.toUpperCase());
 
                     if (fieldConstant == null) {
                         throw new IllegalArgumentException(String.format("CSV header '%s' not recognized", fieldName));

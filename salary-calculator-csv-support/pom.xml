@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>wages</artifactId>
+        <groupId>org.fluidity</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <groupId>org.fluidity.wages</groupId>
+    <artifactId>salary-calculator-csv-support</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Salary Calculator CSV Support</name>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>salary-calculator-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.fluidity.platform</groupId>
+            <artifactId>fluid-tools-tests</artifactId>
+            <version>${fluid.tools.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>org.fluidity.platform</groupId>
+                <artifactId>composition-maven-plugin</artifactId>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
