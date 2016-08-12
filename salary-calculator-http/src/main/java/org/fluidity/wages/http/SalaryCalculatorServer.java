@@ -21,13 +21,17 @@ final class SalaryCalculatorServer implements Application {
     private final ContainerTermination stopping;
     private final Log log;
 
-    private final ResourceHandlerFactory resources;
-    private final SalaryCalculatorHandlerFactory calculator;
+    private final Vertx vertx;
 
-    SalaryCalculatorServer(final SalaryCalculatorHandlerFactory calculator,
-                           final ResourceHandlerFactory resources,
+    private final ResourceHandler resources;
+    private final SalaryCalculatorHandler calculator;
+
+    SalaryCalculatorServer(final VertxInstance vertx,
+                           final SalaryCalculatorHandler calculator,
+                           final ResourceHandler resources,
                            final ContainerTermination stopping,
                            final Log<SalaryCalculatorServer> log) {
+        this.vertx = vertx.get();
         this.resources = resources;
         this.calculator = calculator;
         this.stopping = stopping;
@@ -35,16 +39,14 @@ final class SalaryCalculatorServer implements Application {
     }
 
     public void run(final String... arguments) {
-        final Vertx vertx = Vertx.vertx();
-
         final HttpServer server = vertx.createHttpServer();
         final Router router = Router.router(vertx);
 
         // Computes salary from an uploaded CSV file.
-        router.post("/calculate").produces("application/json").handler(calculator.apply(vertx));
+        router.post("/calculate").produces("application/json").handler(calculator);
 
         // Serves the static files from src/main/resources/webroot that comprise the HTML client.
-        router.get().handler(resources.apply(vertx));
+        router.get().handler(resources);
 
         try {
             final String host = "localhost";        // hard-coded for now, as this is only a demo
