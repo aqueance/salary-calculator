@@ -62,7 +62,6 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
 
                 final Handler<Future<JsonObject>> logic = future -> {
                     final JsonObject json = new JsonObject();
-                    json.put("currency", "USD");
 
                     final JsonArray months = new JsonArray();
                     json.put("months", months);

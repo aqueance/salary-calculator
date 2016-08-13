@@ -6,7 +6,10 @@ import org.fluidity.deployment.cli.Application;
 import org.fluidity.foundation.Log;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 
 /**
@@ -47,6 +50,15 @@ final class SalaryCalculatorServer implements Application {
 
         // Serves the static files from src/main/resources/webroot that comprise the HTML client.
         router.get().handler(resources);
+
+        // Prevents HTML body to be sent back by Vert.x.
+        router.route().handler(context -> {
+            final HttpServerRequest request = context.request();
+            final HttpServerResponse response = context.response();
+
+            response.setStatusCode(request.method() == HttpMethod.GET ? 404 : 405);
+            response.end();
+        });
 
         try {
             final String host = "localhost";        // hard-coded for now, as this is only a demo

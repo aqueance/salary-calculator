@@ -61,8 +61,7 @@ class ResourceHandler implements Handler<RoutingContext> {
         final URL resource = ClassLoaders.findResource(getClass(), path);
 
         if (resource == null) {
-            response.setStatusCode(404);
-            response.end();
+            context.next();
         } else {
 
             // TODO: handle caching headers
