@@ -1,0 +1,25 @@
+.hidden {
+    display: none;
+}
+
+.upload-icon {
+    color: lightgray;
+    font-size: 8em;
+    padding: 0.1em;
+    border-radius: 0.1em;
+    border: 0.03em dotted transparent;
+}
+
+.upload-icon.active {
+    border-color: gray;
+}
+
+.upload-icon.accept-drag {
+    color: lightblue;
+    border-color: blue;
+}
+
+.container {
+    padding-top: 1em;
+    padding-bottom: 1em;
+}
