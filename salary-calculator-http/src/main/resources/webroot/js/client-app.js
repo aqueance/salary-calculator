@@ -1,69 +1,56 @@
 'use strict';
 
-(function(element) {
-    function ErrorModel() {
-        this.data = m.prop('');
+var transformations = {
+    'hidden': 'hidden',
+    'error': 'text-danger',
+    'container': 'container',
+    'row': 'row',
+    'page-title': 'col-xs-12',
+    'file-upload-view': 'col-xs-4 col-sm-3 col-md-2',
+    'salary-list-view': 'col-xs-8 col-sm-9 col-md-10',
+    'upload-active': 'upload-icon fa fa-cog fa-spin fa-fw text-danger',
+    'upload-ready': 'upload-icon fa fa-upload active',
+    'pretty-table': 'table table-striped table-hover table-condensed',
+    'file-name': 'text-info',
+    'month': 'pull-right'
+};
 
-        this.view = ErrorModel.view.bind(this);
+var transform = 'transform';
+
+function transformer(node) {
+    if (node && typeof node === 'object') {
+        var attributes = node.attrs;
+
+        if (attributes && typeof attributes[transform] === 'string') {
+            var transformed = transformations[attributes[transform]];
+
+            if (transformed) {
+                delete attributes[transform];
+
+                var className = attributes.className;
+                attributes.className = !className ? transformed : (className + ' ' + transformed);
+            }
+        }
+
+        var children = node.children;
+
+        if (children && typeof children.forEach === 'function') {
+            children.forEach(transformer);
+        }
     }
 
-    ErrorModel.view = function() {
-        var data = this.data();
-        return m('div' + (!data ? '.hidden' : '.text-danger'), m('strong', data));
-    };
+    return node;
+}
 
-    function SalaryListModel() {
-        this.name = m.prop('');
-        this.data = m.prop();
+function marker(tag) {
+    var marks = Array.apply(null, arguments).slice(1);
+    return tag + '[' + transform + '=' + marks.join('-') + ']';
+}
 
-        var self = this;
-        this.loading = function(name) {
-            self.name(name);
-            self.data(null);
-        };
+(function(element, tag, transform) {
 
-        this.view = SalaryListModel.view.bind(this);
-    }
-
-    SalaryListModel.view = function() {
-        var data = this.data();
-
-        if (!data) return m('div.hidden');
-        if (data.error) return m('div.text-danger', data.error);
-
-        var name = this.name();
-        return m('table.table.table-striped.table-bordered.table-hover.table-condensed', [
-            data.months.map(function(month) {
-                return [
-                    m('thead', [
-                        m('tr', [
-                            m('th[colspan=3].text-info', [
-                                m('div.pull-right', month.month + '/' + month.year),
-                                name
-                            ])
-                        ]),
-                        m('tr', [
-                            m('th', 'ID'),
-                            m('th', 'Employee'),
-                            m('th', 'Salary')
-                        ])
-                    ]),
-                    m('tbody', month.people.map(function(employee) {
-                        return m('tr', [
-                            m('td', employee.id),
-                            m('td', employee.name),
-                            m('td', employee.salary)
-                        ]);
-                    }))
-                ];
-            })
-        ]);
-    };
-
-    var FileUploadModel = (function() {
-
-        // See http://lhorie.github.io/mithril-blog/drag-n-drop-file-uploads.html
-
+    // See http://lhorie.github.io/mithril-blog/drag-n-drop-file-uploads.html
+    var FileUpload = (function() {
         function FileUpload(options) {
             var url = !options ? undefined : options.url;
 
@@ -75,8 +62,8 @@
                 options = options || {};
 
                 var enabled = options.enabled || function() {
-                    return true;
-                };
+                        return true;
+                    };
 
                 function activate(event) {
                     event.preventDefault();
@@ -125,133 +112,237 @@
             };
         }
 
-        function FileUploadModel() {
-            this.loading = m.prop(false);
+        FileUpload.property = Object.create(null);
 
-            this.controller = FileUploadModel.controller.bind(this);
-            this.view = FileUploadModel.view.bind(this);
+        return FileUpload;
+    })();
+
+    // Mithril view model.
+    var Model = (function() {
+        function Model() {
+            var model = this;
+
+            // bind these as instance properties
+            ['controller', 'view'].forEach(function(property) {
+                var value = model[property];
+
+                if (typeof value === 'function') {
+                    Object.defineProperty(model, property, { value: value.bind(model) });
+                }
+            });
         }
 
-        FileUploadModel.controller = function(options) {
-            if (!options || typeof options.loading !== 'function') throw new Error('No options.loading specified or it is not a function: ' + options.loading);
-            if (!options || typeof options.success !== 'function') throw new Error('No options.success specified or it is not a function; ' + options.success);
-            if (!options || typeof options.error !== 'function') throw new Error('No options.error specified or it is not a function: ' + options.error);
+        Model.prototype = Object.create(null);
+
+        return Model;
+    })();
+
+    // This component displays errors
+    var ErrorModel = (function(Model) {
+        function ErrorModel() {
+            Model.apply(this);
+
+            this.data = m.prop('');
+        }
+
+        ErrorModel.prototype = Object.create(Model.prototype, {
+            view: {
+                value: function() {
+                    return transform(m(tag('div', 'error'), m('strong', this.data())));
+                }
+            }
+        });
+
+        return ErrorModel;
+    })(Model);
+
+    // This component shows a list of monthly salaries
+    var SalaryListModel = (function(Model) {
+        function SalaryListModel() {
+            Model.apply(this);
+
+            this.name = m.prop('');     // the name of the uploaded file
+            this.data = m.prop();       // the data returned by the server
 
             var self = this;
 
-            options.enabled = function() {
-                return !self.loading();
+            // notification that a new file upload is taking place
+            this.loading = function(name) {
+                self.name(name);
+                self.data(null);
             };
+        }
 
-            var files = new FileUpload(options);
+        SalaryListModel.prototype = Object.create(Model.prototype, {
+            view: {
+                value: function() {
+                    var data = this.data();
 
-            return function(element) {
-                files.dragdrop(element, {
-                    onchange: function(file) {
-                        if (!self.loading()) {
-                            if (file.type !== 'text/csv') {
-                                options.error('That was not a CSV file.');
-                            } else {
-                                self.loading(true);
+                    if (!data) return m(tag('div', 'hidden'));
+                    if (data.error) return m(tag('div', 'error'), data.error);
 
-                                options.error(null);
-                                options.loading(file.name);
+                    var name = this.name();
+                    var view = m(tag('table', 'pretty-table'),
+                        Array.prototype.concat.apply([], data.months.map(function(subject) {
+                            return [
+                                m('thead', [
+                                    m('tr', [
+                                        m(tag('th[colspan=3]', 'file-name'), [
+                                            m(tag('div', 'month'), subject.month + '/' + subject.year),
+                                            name
+                                        ])
+                                    ]),
+                                    m('tr', [
+                                        m('th', 'ID'),
+                                        m('th', 'Employee'),
+                                        m('th', 'Salary')
+                                    ])
+                                ]),
+                                m('tbody', subject.people.map(function(employee) {
+                                    return m('tr', [
+                                        m('td', employee.id),
+                                        m('td', employee.name),
+                                        m('td', employee.salary)
+                                    ]);
+                                }))
+                            ];
+                        }))
+                    );
 
-                                files.upload(file).then(function(data) {
-                                    self.loading(false);
-                                    options.success(data);
-                                }, function(data) {
-                                    self.loading(false);
-                                    options.error(data || 'Communicate failure with the server.');
-                                });
-                            }
-
-                            m.redraw();
-                        }
-                    }
-                });
-            };
-        };
-
-        FileUploadModel.view = function(initialize) {
-            return m('div.upload-icon.fa' + (this.loading() ? '.fa-cog.fa-spin.fa-fw.text-danger' : '.fa-upload.active'), {
-                config: function(element, initialized) {
-                    if (!initialized) {
-                        initialize(element);
-                    }
+                    return transform(view);
                 }
-            });
-        };
+            }
+        });
+
+        return SalaryListModel;
+    })(Model);
+
+    // This component shows the file upload receptor and spinner
+    var FileUploadModel = (function(Model, FileUpload) {
+        function FileUploadModel() {
+            Model.apply(this);
+
+            this.loading = m.prop(false);
+        }
+
+        FileUploadModel.prototype = Object.create(Model.prototype, {
+            controller: {
+                value: function(options) {
+                    if (!options || typeof options.loading !== 'function') throw new Error('No options.loading specified or it is not a function: ' + options.loading);
+                    if (!options || typeof options.success !== 'function') throw new Error('No options.success specified or it is not a function; ' + options.success);
+                    if (!options || typeof options.error !== 'function') throw new Error('No options.error specified or it is not a function: ' + options.error);
+
+                    var self = this;
+
+                    options.enabled = function() {
+                        return !self.loading();
+                    };
+
+                    var files = new FileUpload(options);
+
+                    return function(element) {
+                        files.dragdrop(element, {
+                            onchange: function(file) {
+                                if (!self.loading()) {
+                                    if (file.type !== 'text/csv') {
+                                        options.error('That was not a CSV file.');
+                                    } else {
+                                        self.loading(true);
+
+                                        options.error(null);
+                                        options.loading(file.name);
+
+                                        files.upload(file).then(function(data) {
+                                            self.loading(false);
+                                            options.success(data);
+                                        }, function(data) {
+                                            self.loading(false);
+                                            options.error(data || 'Communicate failure with the server.');
+                                        });
+                                    }
+
+                                    m.redraw();
+                                }
+                            }
+                        });
+                    };
+                }
+            },
+            view: {
+                value: function(initialize) {
+                    var view = m(tag('div', 'upload', this.loading() ? 'active' : 'ready'), {
+                        config: function(element, initialized) {
+                            if (!initialized) {
+                                initialize(element);
+                            }
+                        }
+                    });
+
+                    return transform(view);
+                }
+            }
+        });
 
         return FileUploadModel;
-    })();
+    })(Model, FileUpload);
 
-    function UploadComposite(fileUploadModel, salaryListModel, errorModel) {
-        this.fileUploadModel = fileUploadModel;
-        this.errorModel = errorModel;
-        this.salaryListModel = salaryListModel;
+    // This component shows the header
+    var HeadingModel = (function(Model) {
+        function HeadingModel(text) {
+            Model.apply(this);
 
-        this.view = UploadComposite.view.bind(this);
-    }
+            this.text = m.prop(text);
+        }
 
-    UploadComposite.view = function(controller, options) {
-        return m('div' + (options.width || '.col-xs-12'), [
-            m(this.fileUploadModel, {
-                url: '/calculate',
-                loading: this.salaryListModel.loading,
-                success: this.salaryListModel.data,
-                error: this.errorModel.data
-            }),
-            m(this.errorModel)
-        ]);
-    };
+        HeadingModel.prototype = Object.create(Model.prototype, {
+            view: {
+                value: function() {
+                    return transform(m(tag('h3', 'page-title'), this.text()));
+                }
+            }
+        });
 
-    function SalariesComposite(salaryListModel) {
-        this.salaryListModel = salaryListModel;
+        return HeadingModel;
+    })(Model);
 
-        this.view = SalariesComposite.view.bind(this);
-    }
+    var SalaryCalculatorPage = (function(Model) {
+        function SalaryCalculatorPage(url) {
+            Model.apply(this);
 
-    SalariesComposite.view = function(controller, options) {
-        return m('div' + (options.width || '.col-xs-12'), m(this.salaryListModel));
-    };
+            this.headingModel = new HeadingModel('Drop an hour list file onto the box:');
+            this.errorModel = new ErrorModel();
+            this.fileUploadModel = new FileUploadModel();
+            this.salaryListModel = new SalaryListModel();
 
-    function SalaryCalculatorPage(headingModel, uploadComposite, salariesComposite) {
-        this.headingModel = headingModel;
-        this.uploadComposite = uploadComposite;
-        this.salariesComposite = salariesComposite;
+            this.url = url;
+        }
 
-        this.view = SalaryCalculatorPage.view.bind(this);
-    }
+        SalaryCalculatorPage.prototype = Object.create(Model.prototype, {
+            view: {
+                value: function() {
+                    var view = m(tag('div', 'container'), [
+                        m(tag('div', 'row'), m(this.headingModel)),
+                        m(tag('div', 'row'), [
+                            m(tag('div', 'file-upload-view'), [
+                                m(this.fileUploadModel, {
+                                    url: this.url,
+                                    loading: this.salaryListModel.loading,
+                                    success: this.salaryListModel.data,
+                                    error: this.errorModel.data
+                                }),
+                                m(this.errorModel)
+                            ]),
+                            m(tag('div', 'salary-list-view'), m(this.salaryListModel))
+                        ])
+                    ]);
 
-    SalaryCalculatorPage.view = function() {
-        return m('div.container', [
-            m('div.row', this.headingModel),
-            m('div.row', [
-                m(this.uploadComposite, { width: '.col-xs-4.col-sm-3.col-md-2' }),
-                m(this.salariesComposite, { width: '.col-xs-8.col-sm-9.col-md-10' })
-            ])        ]);
-    };
+                    return transform(view);
+                }
+            }
+        });
 
-    function HeadingModel(text) {
-        this.text = m.prop(text);
+        return SalaryCalculatorPage;
+    })(Model);
 
-        this.view = HeadingModel.view.bind(this);
-    }
-
-    HeadingModel.view = function() {
-        return m('h3.col-xs-12', this.text());
-    };
-
-    var errorModel = new ErrorModel();
-    var salaryListModel = new SalaryListModel();
-    var fileUploadModel = new FileUploadModel();
-
-    var uploadComposite = new UploadComposite(fileUploadModel, salaryListModel, errorModel);
-    var salariesComposite = new SalariesComposite(salaryListModel);
-
-    var headingModel = new HeadingModel('Drop an hour list file onto the box:');
-    var salaryCalculatorPage = new SalaryCalculatorPage(headingModel, uploadComposite, salariesComposite);
-
-    m.mount(element, m(salaryCalculatorPage));
-})(document.body);
+    m.mount(element, m(new SalaryCalculatorPage('calculate')));
+})(document.body, marker, transformer);

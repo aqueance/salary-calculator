@@ -40,7 +40,7 @@
             <type>pom</type>
         </dependency>
 
-<!-- Proper logging, should you need one; else all messages go to stdout (without concurrency control)
+<!-- Proper logging, should you need one; else all messages go to stdout, without concurrency control
         <dependency>
             <groupId>org.fluidity.platform</groupId>
             <artifactId>logging-slf4j-impl</artifactId>
