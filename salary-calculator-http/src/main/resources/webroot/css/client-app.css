@@ -19,8 +19,8 @@
 }
 
 .upload-icon.accept-drag {
-    color: lightblue;
     border-color: blue;
+    border-style: solid;
 }
 
 .container {
