@@ -6,14 +6,12 @@ import org.fluidity.deployment.cli.Application;
 import org.fluidity.foundation.Log;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 
 /**
- * TODO
+ * An HTTP server that calculates salaries from time sheets, and exposes its own HTML client at "/".
  */
 @Component
 @SuppressWarnings("WeakerAccess")
@@ -51,12 +49,11 @@ final class SalaryCalculatorServer implements Application {
         // Serves the static files from src/main/resources/webroot that comprise the HTML client.
         router.get().handler(resources);
 
-        // Prevents HTML body to be sent back by Vert.x.
+        // Prevents HTML body to be sent back by Vert.x on errors (Mithril chokes on that).
         router.route().handler(context -> {
-            final HttpServerRequest request = context.request();
             final HttpServerResponse response = context.response();
 
-            response.setStatusCode(request.method() == HttpMethod.GET ? 404 : 405);
+            response.setStatusCode(404);
             response.end();
         });
 
