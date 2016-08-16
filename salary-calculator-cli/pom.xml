@@ -36,16 +36,14 @@
         </dependency>
 
         <dependency>
-            <groupId>org.fluidity.platform</groupId>
+            <groupId>${fluid.tools.group.id}</groupId>
             <artifactId>fluid-tools-cli-application</artifactId>
-            <version>${fluid.tools.version}</version>
             <type>pom</type>
         </dependency>
 
         <dependency>
-            <groupId>org.fluidity.platform</groupId>
+            <groupId>${fluid.tools.group.id}</groupId>
             <artifactId>logging-sink-impl</artifactId>
-            <version>${fluid.tools.version}</version>
         </dependency>
 
     </dependencies>
@@ -54,17 +52,17 @@
         <plugins>
 
             <plugin>
-                <groupId>org.fluidity.platform</groupId>
+                <groupId>${fluid.tools.group.id}</groupId>
                 <artifactId>composition-maven-plugin</artifactId>
             </plugin>
 
             <plugin>
-                <groupId>org.fluidity.platform</groupId>
+                <groupId>${fluid.tools.group.id}</groupId>
                 <artifactId>standalone-jar-maven-plugin</artifactId>
 
                 <dependencies>
                     <dependency>
-                        <groupId>org.fluidity.platform</groupId>
+                        <groupId>${fluid.tools.group.id}</groupId>
                         <artifactId>jar-manifest-command-launcher-impl</artifactId>
                         <version>${fluid.tools.version}</version>
                     </dependency>

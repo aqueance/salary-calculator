@@ -33,7 +33,7 @@ Use the following syntax see what components are used and what modules get
 packaged in the deployable archives:
 
 ```bash
-$ mvn package -Dfluidity.maven.verbose=true
+$ mvn package -Dverbose
 ```
 
 ## The Demo
@@ -67,43 +67,42 @@ To stop the server, just kill the Java process (e.g., press Ctrl-C).
 
 ## Highlights
 
-I would like to bring to attention a few details about the implementation.
-
 My goals with this demo were twofold:
 
  1. to find the least possible amount of code that implements the required
     logic and exposes it in the ways mentioned above.
- 1. to explore tools I haven't used before: [Vert.x] and [Mithril].
+ 1. to explore tools I haven't used before.
 
 As to the first goal, you be the judge:
 
-Using [Fluid Tools] allowed me to create
-components and move them around without having to worry about wiring (i.e.,
-you will find no dependency registration or configuration anywhere in the
-sources), and to generate executable Java archives by the simple act of using
-a specific Maven archetype to generate the corresponding Maven project.
+Using [Fluid Tools] allowed me to create components and move them around
+without having to worry about wiring (i.e., _you will find no dependency
+registration or configuration anywhere in the sources_), and to generate
+executable Java archives by the simple act of using a specific Maven
+archetype to generate the corresponding Maven project.
 
-That ease of composition also allowed me to break down the code into fine
-grained modules to avoid duplication, which to me is a good thing, although as
+That ease of composition also allowed me to break down the code into _fine
+grained modules_ to avoid duplication, which to me is a good thing, although as
 the author of [Fluid Tools] I may be biased, or even blind to the complexity
 that many small modules may lead to in practice.
-
-In any case, the resulted is a self-contained command line tool that is about
-380 KB, and a self-contained online tool that is about 6.5 MB, most of which
-is the embedded web container.
 
 As to the second goal, [Vert.x-Web] allowed me to make an event-looped web
 server in Java, while [Mithril] allowed me to make an HTML UI strictly in
 JavaScript, with HTML only providing a bare wire-frame thereto. Both of these
 I am very happy about.
 
+In any case, the result is a self-contained command line tool that is about
+*380 KB*, and a self-contained online tool that is about *6.5 MB* – most of which
+is the embedded web container. I could have used the simple HTTP server [built
+in the JRE](http://stackoverflow.com/a/3732328), which would certainly have cut
+down the size of the archive but would not have given me non-blocking I/O.
+
 ## Technical Debt
 
 In a real-life scenario, I would have implemented the online tool differently:
 
-What is now the entire tool should have been a proper REST API only over
-HTTPS, and there should have been a separate client project for the REST
-API.
+What is now the entire tool should have been split into two: a proper REST API
+(HATEOAS) over HTTPS, and a separate client project for the REST API.
 
-The client project should have been based on [npm](https://www.npmjs.com/) and
-used the proper tools for JavaScript client development.
+The client project should also have been based on [npm](https://www.npmjs.com/)
+and used the proper tools for JavaScript client development.

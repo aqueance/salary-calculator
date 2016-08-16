@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.fluidity.composition.Component;
 import org.fluidity.foundation.ClassLoaders;
+import org.fluidity.foundation.IOStreams;
 
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -80,14 +81,10 @@ class ResourceHandler implements Handler<RoutingContext> {
                     response.putHeader("Content-Length", String.valueOf(contentLength));
 
                     vertx.executeBlocking(future -> {
-                        try {
-                            final InputStream stream = connection.getInputStream();
-
-                            final byte[] bytes = new byte[CHUNK_SIZE];
-
-                            for (int len; (len = stream.read(bytes)) != -1; ) {
-                                response.write(Buffer.buffer(len).appendBytes(bytes, 0, len));
-                            }
+                        try (final InputStream stream = connection.getInputStream()) {
+                            IOStreams.send(stream,
+                                           new byte[CHUNK_SIZE],
+                                           (bytes, from, count) -> response.write(Buffer.buffer(count).appendBytes(bytes, from, count)));
                         } catch (final IOException error) {
                             response.setStatusCode(500);
                             response.end(error.getMessage());

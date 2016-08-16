@@ -18,9 +18,8 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.fluidity.platform</groupId>
+            <groupId>${fluid.tools.group.id}</groupId>
             <artifactId>fluid-tools-component-api</artifactId>
-            <version>${fluid.tools.version}</version>
             <type>pom</type>
         </dependency>
 

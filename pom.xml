@@ -16,18 +16,55 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <fluid.tools.group.id>org.fluidity.platform</fluid.tools.group.id>
         <fluid.tools.version>1.0.0-SNAPSHOT</fluid.tools.version>
     </properties>
 
-    <!-- Allows specifying the target repository as -DaltDeploymentRepository (http://maven.apache.org/plugins/maven-deploy-plugin/deploy-mojo.html)
-        <distributionManagement>
-            <repository>
-                <id>dummy</id>
-                <name>Dummy</name>
-                <url>dummy</url>
-            </repository>
-        </distributionManagement>
-    -->
+    <dependencyManagement>
+        <dependencies>
+
+            <dependency>
+                <groupId>${fluid.tools.group.id}</groupId>
+                <artifactId>fluid-tools-component-api</artifactId>
+                <version>${fluid.tools.version}</version>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>${fluid.tools.group.id}</groupId>
+                <artifactId>fluid-tools-cli-application</artifactId>
+                <version>${fluid.tools.version}</version>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>${fluid.tools.group.id}</groupId>
+                <artifactId>logging-sink-impl</artifactId>
+                <version>${fluid.tools.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>${fluid.tools.group.id}</groupId>
+                <artifactId>logging-slf4j-impl</artifactId>
+                <version>${fluid.tools.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>1.7.21</version>
+            </dependency>
+
+            <dependency>
+                <groupId>${fluid.tools.group.id}</groupId>
+                <artifactId>fluid-tools-tests</artifactId>
+                <version>${fluid.tools.version}</version>
+                <type>pom</type>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+
+    </dependencyManagement>
 
     <build>
         <defaultGoal>package</defaultGoal>
@@ -74,7 +111,7 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.fluidity.platform</groupId>
+                    <groupId>${fluid.tools.group.id}</groupId>
                     <artifactId>composition-maven-plugin</artifactId>
                     <version>${fluid.tools.version}</version>
 
@@ -88,7 +125,7 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.fluidity.platform</groupId>
+                    <groupId>${fluid.tools.group.id}</groupId>
                     <artifactId>standalone-jar-maven-plugin</artifactId>
                     <version>${fluid.tools.version}</version>
 
@@ -117,4 +154,15 @@
         <module>salary-calculator-cli</module>
         <module>salary-calculator-http</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>verbose</id>
+            <activation><property><name>verbose</name></property></activation>
+
+            <properties>
+                <fluidity.maven.verbose>true</fluidity.maven.verbose>
+            </properties>
+        </profile>
+    </profiles>
 </project>

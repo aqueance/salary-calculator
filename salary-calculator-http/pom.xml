@@ -34,23 +34,20 @@
         </dependency>
 
         <dependency>
-            <groupId>org.fluidity.platform</groupId>
+            <groupId>${fluid.tools.group.id}</groupId>
             <artifactId>fluid-tools-cli-application</artifactId>
-            <version>${fluid.tools.version}</version>
             <type>pom</type>
         </dependency>
 
-<!-- Proper logging, should you need one; else all messages go to stdout, without concurrency control
+<!-- Proper logging, should you need one (you'll need to configure it, though); else all messages go to stdout, without concurrency control
         <dependency>
-            <groupId>org.fluidity.platform</groupId>
+            <groupId>${fluid.tools.group.id}</groupId>
             <artifactId>logging-slf4j-impl</artifactId>
-            <version>${fluid.tools.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.21</version>
         </dependency>
 -->
 
@@ -78,12 +75,12 @@
         <plugins>
 
             <plugin>
-                <groupId>org.fluidity.platform</groupId>
+                <groupId>${fluid.tools.group.id}</groupId>
                 <artifactId>composition-maven-plugin</artifactId>
             </plugin>
 
             <plugin>
-                <groupId>org.fluidity.platform</groupId>
+                <groupId>${fluid.tools.group.id}</groupId>
                 <artifactId>standalone-jar-maven-plugin</artifactId>
 
 <!-- Uncomment this to produce a new artifact with the given classifier instead of overwriting the project artifact.
@@ -94,7 +91,7 @@
 
                 <dependencies>
                     <dependency>
-                        <groupId>org.fluidity.platform</groupId>
+                        <groupId>${fluid.tools.group.id}</groupId>
                         <artifactId>jar-manifest-command-launcher-impl</artifactId>
                         <version>${fluid.tools.version}</version>
                     </dependency>
