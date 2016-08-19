@@ -91,10 +91,12 @@ public class JsonStream {
     }
 
     /**
-     * Closes this container. This is when the closing character is emitted, after any child that has yet to be closed is closed. If this parent has no
-     * container, any buffered content accumulated so far is also flushed.
+     * Closes this container. The last open child container, if any, is closed, and then the closing character is emitted. If this parent has no container, any
+     * buffered content accumulated so far is also flushed.
+     *
+     * @param callback the object to invoke once this container has been closed; can be <code>null</code>.
      */
-    public final void close() {
+    public final void close(final Runnable callback) {
         if (openChild != null) {
             openChild.close();
         }
@@ -108,6 +110,17 @@ public class JsonStream {
         if (parent == null) {
             buffer.flush();
         }
+
+        if (callback != null) {
+            callback.run();
+        }
+    }
+
+    /**
+     * Invokes {@link #close(Runnable)} with no callback.
+     */
+    public final void close() {
+        close(null);
     }
 
     /**

@@ -1,9 +1,12 @@
 package org.fluidity.wages.http.json;
 
+import org.fluidity.testing.Simulator;
+
+import org.easymock.EasyMock;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class JsonArrayTest {
+public class JsonArrayTest extends Simulator {
 
     @Test
     public void testBooleanEncodig() throws Exception {
@@ -139,5 +142,16 @@ public class JsonArrayTest {
         json.close();
 
         Assert.assertEquals(value.toString(), "[{\"a\":[{\"b\":[{}]}]}]");
+    }
+
+    @Test
+    public void testInvokesCloseCallback() throws Exception {
+        final JsonStream.Array json = JsonStream.array(4, ignored -> {});
+        final Runnable callback = dependencies().normal(Runnable.class);
+
+        callback.run();
+        EasyMock.expectLastCall();
+
+        verify(() -> json.close(callback));
     }
 }

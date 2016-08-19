@@ -103,8 +103,7 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                         json.add("error", error.getMessage());
                     }
 
-                    json.close();
-                    response.end();
+                    json.close(response::end);
 
                     future.complete();
                 };

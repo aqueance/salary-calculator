@@ -1,12 +1,12 @@
 package org.fluidity.wages.http.json;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import org.fluidity.testing.Simulator;
 
-import org.testng.annotations.Test;
+import org.easymock.EasyMock;
 import org.testng.Assert;
+import org.testng.annotations.Test;
 
-public class JsonObjectTest {
+public class JsonObjectTest extends Simulator {
 
     @Test
     public void testBooleanEncodig() throws Exception {
@@ -142,5 +142,16 @@ public class JsonObjectTest {
         json.close();
 
         Assert.assertEquals(value.toString(), "{\"a\":[{\"b\":[{\"c\":[]}]}]}");
+    }
+
+    @Test
+    public void testInvokesCloseCallback() throws Exception {
+        final JsonStream.Object json = JsonStream.object(4, ignored -> {});
+        final Runnable callback = dependencies().normal(Runnable.class);
+
+        callback.run();
+        EasyMock.expectLastCall();
+
+        verify(() -> json.close(callback));
     }
 }
