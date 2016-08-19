@@ -20,6 +20,20 @@
         <fluid.tools.version>1.0.0-SNAPSHOT</fluid.tools.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>fluid-tools</id>
+            <url>https://aqueance.github.io/maven/repository</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>fluid-tools</id>
+            <url>https://aqueance.github.io/maven/repository</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <dependencyManagement>
         <dependencies>
 
@@ -75,39 +89,35 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
+                    <version>3.5.1</version>
 
                     <configuration>
                         <source>1.8</source>
                         <target>1.8</target>
-                        <encoding>UTF-8</encoding>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <compilerArgument>-Xlint:unchecked</compilerArgument>
+                        <compilerArgument>-Xdoclint:-reference</compilerArgument>
                     </configuration>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>3.0.1</version>
 
                     <configuration>
-                        <encoding>UTF-8</encoding>
+                        <encoding>${project.build.sourceEncoding}</encoding>
                     </configuration>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.17</version>
+                    <version>2.19.1</version>
 
                     <configuration>
                         <useFile>false</useFile>
                     </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
                 </plugin>
 
                 <plugin>
