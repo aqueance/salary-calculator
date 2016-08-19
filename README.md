@@ -92,10 +92,11 @@ JavaScript, with HTML only providing a bare wire-frame thereto. Both of these
 I am very happy about.
 
 In any case, the result is a self-contained command line tool that is about
-*380 KB*, and a self-contained online tool that is about *6.5 MB* – most of which
+*380 KB*, and a self-contained online tool that is about *5 MB* – most of which
 is the embedded web container. I could have used the simple HTTP server [built
-in the JRE](http://stackoverflow.com/a/3732328), which would certainly have cut
-down the size of the archive but would not have given me non-blocking I/O.
+in the JRE](http://stackoverflow.com/a/3732328), and that would have cut down
+the size of the archive significantly, but would have deprived me of
+non-blocking I/O.
 
 ## Technical Debt
 

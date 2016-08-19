@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import org.fluidity.composition.Component;
 import org.fluidity.wages.SalaryDetails;
 import org.fluidity.wages.csv.SalaryCalculator;
+import org.fluidity.wages.http.json.JsonStream;
 
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -18,8 +19,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -60,11 +59,12 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                     throw new IllegalArgumentException("unknown encoding: " + upload.charset());
                 }
 
-                final Handler<Future<JsonObject>> logic = future -> {
-                    final JsonObject json = new JsonObject();
+                response.putHeader("Content-Type", context.getAcceptableContentType() + "; charset=utf-8");
+                response.setChunked(true);
 
-                    final JsonArray months = new JsonArray();
-                    json.put("months", months);
+                final Handler<Future<JsonStream>> logic = future -> {
+                    final JsonStream.Object json = JsonStream.object(16384, response::write);
+                    final JsonStream.Array months = json.array("months");
 
                     final Consumer<SalaryDetails> printer = new Consumer<SalaryDetails>() {
 
@@ -72,28 +72,26 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                         private LocalDate month;
 
                         // The array of people objects for the current month.
-                        private JsonArray peopleArray = new JsonArray();
+                        private JsonStream.Array peopleArray;
 
                         @Override
                         public void accept(final SalaryDetails details) {
                             if (month == null || !details.month.equals(month)) {
                                 month = details.month;
 
-                                final JsonObject monthObject = new JsonObject();
-                                months.add(monthObject);
+                                final JsonStream.Object monthObject = months.object();
 
-                                monthObject.put("year", month.getYear());
-                                monthObject.put("month", month.getMonthValue());
+                                monthObject.add("year", month.getYear());
+                                monthObject.add("month", month.getMonthValue());
 
-                                monthObject.put("people", peopleArray = new JsonArray());
+                                peopleArray = monthObject.array("people");
                             }
 
-                            final JsonObject peopleObject = new JsonObject();
-                            peopleArray.add(peopleObject);
+                            final JsonStream.Object peopleObject = peopleArray.object();
 
-                            peopleObject.put("id", details.personId);
-                            peopleObject.put("name", details.personName);
-                            peopleObject.put("salary", details.amount());
+                            peopleObject.add("id", details.personId);
+                            peopleObject.add("name", details.personName);
+                            peopleObject.add("salary", details.amount());
                         }
                     };
 
@@ -102,17 +100,16 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                     try {
                         calculator.process(new InputStreamReader(new ByteArrayInputStream(buffer.getBytes()), encoding), printer);
                     } catch (final Exception error) {
-                        json.clear();
-                        json.put("error", error.getMessage());
+                        json.add("error", error.getMessage());
                     }
 
-                    future.complete(json);
+                    json.close();
+                    response.end();
+
+                    future.complete();
                 };
 
-                vertx.executeBlocking(logic, result -> {
-                    response.putHeader("content-type", context.getAcceptableContentType() + "; charset=utf-8");
-                    response.end(result.result().encode());
-                });
+                vertx.executeBlocking(logic, null);
             });
 
             upload.handler(buffer::appendBuffer);
