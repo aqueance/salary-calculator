@@ -111,3 +111,7 @@ API, and a separate client based on that API.
 
 The client project should also have been based on [npm](https://www.npmjs.com/)
 and used the proper tools for JavaScript client development.
+
+***
+
+Copyright © 2016 Tibor Adam Varga. All rights reserved.
