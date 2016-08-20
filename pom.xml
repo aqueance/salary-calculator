@@ -20,6 +20,14 @@
         <fluid.tools.version>1.0.0-SNAPSHOT</fluid.tools.version>
     </properties>
 
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <repositories>
         <repository>
             <id>fluid-tools</id>
@@ -154,6 +162,19 @@
 
             </plugins>
         </pluginManagement>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/licenses</directory>
+                <filtering>true</filtering>
+                <targetPath>META-INF/licenses/${project.groupId}/${project.artifactId}</targetPath>
+            </resource>
+        </resources>
+
     </build>
 
     <modules>
