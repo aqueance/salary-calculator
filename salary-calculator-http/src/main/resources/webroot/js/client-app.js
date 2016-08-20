@@ -16,6 +16,13 @@
 
 'use strict';
 
+// This is a Mithril (http://mithril.js.org) application, consisting of
+// several components all in one file. This is not optimal, but building HTML5
+// UI with Maven is not optimal either, so there.
+
+// The list of transformations. Each name is mapped to a space separated list
+// of CSS classes, which will be used to populate the class attribute of the
+// transformed HTML tag.
 var transformations = {
     'hidden': 'hidden',
     'error': 'text-danger',
@@ -31,8 +38,13 @@ var transformations = {
     'month': 'pull-right'
 };
 
+// The transformation marker.
 var transform = 'transform';
 
+// Applies transformations on the Mithril representation of a view tree.
+// This is a recursive function.
+//
+// See http://lhorie.github.io/mithril-blog/when-css-lets-you-down.html
 function transformer(node) {
     if (node && typeof node === 'object') {
         var attributes = node.attrs;
@@ -58,11 +70,15 @@ function transformer(node) {
     return node;
 }
 
+// Marks the given HTML tag to perform transformations on. The transformation
+// names are listed as the rest of the parameters to the function.
 function marker(tag) {
     var marks = Array.apply(null, arguments).slice(1);
     return tag + '[' + transform + '=' + marks.join('-') + ']';
 }
 
+// The Mithril components. Each component class is defined in a function
+// expression for clearer separation.
 (function(element, tag, transform) {
 
     // See http://lhorie.github.io/mithril-blog/drag-n-drop-file-uploads.html
@@ -273,7 +289,7 @@ function marker(tag) {
                                             options.success(data);
                                         }, function(data) {
                                             self.loading(false);
-                                            options.error(data || 'Communicate failure with the server.');
+                                            options.error(data || 'Communication failure with the server.');
                                         });
                                     }
 
