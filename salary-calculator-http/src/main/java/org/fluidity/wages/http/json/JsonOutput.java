@@ -10,7 +10,7 @@ import java.util.function.Consumer;
  * behavior.
  */
 @SuppressWarnings({ "unused", "WeakerAccess" })
-public class JsonStream {
+public class JsonOutput {
 
     /**
      * Creates a new JSON object.
@@ -20,7 +20,7 @@ public class JsonStream {
      *
      * @return a new object; never <code>null</code>.
      */
-    public static JsonStream.Object object(final int buffer, final Consumer<String> consumer) {
+    public static JsonOutput.Object object(final int buffer, final Consumer<String> consumer) {
         return new Object(null, new CharacterBuffer(buffer, consumer));
     }
 
@@ -32,18 +32,18 @@ public class JsonStream {
      *
      * @return a new object; never <code>null</code>.
      */
-    public static JsonStream.Array array(final int buffer, final Consumer<String> consumer) {
+    public static JsonOutput.Array array(final int buffer, final Consumer<String> consumer) {
         return new Array(null, new CharacterBuffer(buffer, consumer));
     }
 
     protected final CharacterBuffer buffer;
 
     // The parent container, if any.
-    private final JsonStream parent;
+    private final JsonOutput parent;
     private final char closeMark;
 
     // The last child container, if any, that has been opened but not yet closed.
-    private JsonStream openChild;
+    private JsonOutput openChild;
 
     // Set when there at least one value has been added to this container.
     private boolean compound;
@@ -56,7 +56,7 @@ public class JsonStream {
      * @param openMark  the character that opens this container.
      * @param closeMark the character that closes this container.
      */
-    protected JsonStream(final JsonStream parent, final CharacterBuffer buffer, final char openMark, final char closeMark) {
+    protected JsonOutput(final JsonOutput parent, final CharacterBuffer buffer, final char openMark, final char closeMark) {
         this.parent = parent;
         this.buffer = buffer;
         this.closeMark = closeMark;
@@ -68,7 +68,7 @@ public class JsonStream {
      *
      * @param child the child container that has been closed.
      */
-    protected final void closed(final JsonStream child) {
+    protected final void closed(final JsonOutput child) {
         if (openChild == child) {
             openChild = null;
         }
@@ -128,7 +128,7 @@ public class JsonStream {
      *
      * @return a new JSON object; never <code>null</code>.
      */
-    protected final JsonStream.Object _object() {
+    protected final JsonOutput.Object _object() {
         final Object object = new Object(this, buffer);
         openChild = object;
         return object;
@@ -139,7 +139,7 @@ public class JsonStream {
      *
      * @return a new JSON array; never <code>null</code>.
      */
-    protected final JsonStream.Array _array() {
+    protected final JsonOutput.Array _array() {
         final Array array = new Array(this, buffer);
         openChild = array;
         return array;
@@ -148,7 +148,7 @@ public class JsonStream {
     /**
      * A JSON object emitter.
      */
-    public static final class Object extends JsonStream {
+    public static final class Object extends JsonOutput {
 
         /**
          * Creates a new instance.
@@ -156,7 +156,7 @@ public class JsonStream {
          * @param parent the parent container, if any.
          * @param buffer the character buffer to accumulate JSON content.
          */
-        Object(final JsonStream parent, final CharacterBuffer buffer) {
+        Object(final JsonOutput parent, final CharacterBuffer buffer) {
             super(parent, buffer, '{', '}');
         }
 
@@ -223,7 +223,7 @@ public class JsonStream {
          *
          * @param name the name of the property
          */
-        public JsonStream.Object object(final String name) {
+        public JsonOutput.Object object(final String name) {
             appended();
 
             _prologue(name);
@@ -236,7 +236,7 @@ public class JsonStream {
          *
          * @param name the name of the property
          */
-        public JsonStream.Array array(final String name) {
+        public JsonOutput.Array array(final String name) {
             appended();
 
             _prologue(name);
@@ -273,7 +273,7 @@ public class JsonStream {
     /**
      * A JSON array emitter.
      */
-    public static final class Array extends JsonStream {
+    public static final class Array extends JsonOutput {
 
         /**
          * Creates a new instance.
@@ -281,7 +281,7 @@ public class JsonStream {
          * @param parent the parent container, if any.
          * @param buffer the character buffer to accumulate JSON content.
          */
-        Array(final JsonStream parent, final CharacterBuffer buffer) {
+        Array(final JsonOutput parent, final CharacterBuffer buffer) {
             super(parent, buffer, '[', ']');
         }
 
@@ -350,7 +350,7 @@ public class JsonStream {
         /**
          * Adds a new JSON object to this container.
          */
-        public JsonStream.Object object() {
+        public JsonOutput.Object object() {
             appended();
 
             return _object();
@@ -359,7 +359,7 @@ public class JsonStream {
         /**
          * Adds a new JSON array to this container.
          */
-        public JsonStream.Array array() {
+        public JsonOutput.Array array() {
             appended();
 
             return _array();

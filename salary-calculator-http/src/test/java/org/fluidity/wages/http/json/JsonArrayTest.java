@@ -12,7 +12,7 @@ public class JsonArrayTest extends Simulator {
     public void testBooleanEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Array json = JsonStream.array(64, value::append);
+        final JsonOutput.Array json = JsonOutput.array(64, value::append);
 
         json.add(true);
         json.add(false);
@@ -26,7 +26,7 @@ public class JsonArrayTest extends Simulator {
     public void testIntegerEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Array json = JsonStream.array(64, value::append);
+        final JsonOutput.Array json = JsonOutput.array(64, value::append);
 
         json.add(0);
         json.add(1);
@@ -43,7 +43,7 @@ public class JsonArrayTest extends Simulator {
     public void testFloatingPointNumberEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Array json = JsonStream.array(64, value::append);
+        final JsonOutput.Array json = JsonOutput.array(64, value::append);
 
         json.add(0.0);
         json.add(1.0);
@@ -58,7 +58,7 @@ public class JsonArrayTest extends Simulator {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInfinityEncoding() throws Exception {
-        final JsonStream.Array json = JsonStream.array(64, new StringBuilder()::append);
+        final JsonOutput.Array json = JsonOutput.array(64, new StringBuilder()::append);
 
         json.add(Double.POSITIVE_INFINITY);
 
@@ -67,7 +67,7 @@ public class JsonArrayTest extends Simulator {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNaNEncoding() throws Exception {
-        final JsonStream.Array json = JsonStream.array(64, new StringBuilder()::append);
+        final JsonOutput.Array json = JsonOutput.array(64, new StringBuilder()::append);
 
         json.add(Double.NaN);
 
@@ -78,7 +78,7 @@ public class JsonArrayTest extends Simulator {
     public void testEmptyTextEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Array json = JsonStream.array(64, value::append);
+        final JsonOutput.Array json = JsonOutput.array(64, value::append);
 
         json.add("");
 
@@ -91,7 +91,7 @@ public class JsonArrayTest extends Simulator {
     public void testNullEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Array json = JsonStream.array(64, value::append);
+        final JsonOutput.Array json = JsonOutput.array(64, value::append);
 
         json.missing("a");
 
@@ -104,7 +104,7 @@ public class JsonArrayTest extends Simulator {
     public void testEscapedCharacterEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Array json = JsonStream.array(64, value::append);
+        final JsonOutput.Array json = JsonOutput.array(64, value::append);
 
         json.add("a\"b");
         json.add("a\nb");
@@ -122,7 +122,7 @@ public class JsonArrayTest extends Simulator {
     public void testControlCharacterEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Array json = JsonStream.array(64, value::append);
+        final JsonOutput.Array json = JsonOutput.array(64, value::append);
 
         json.add("\u0000\u0002\u0080\u0010\u009f");
 
@@ -135,7 +135,7 @@ public class JsonArrayTest extends Simulator {
     public void testClosesAllOpenContainers() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Array json = JsonStream.array(4, value::append);
+        final JsonOutput.Array json = JsonOutput.array(4, value::append);
 
         json.object().array("a").object().array("b").object();
 
@@ -146,7 +146,7 @@ public class JsonArrayTest extends Simulator {
 
     @Test
     public void testInvokesCloseCallback() throws Exception {
-        final JsonStream.Array json = JsonStream.array(4, ignored -> {});
+        final JsonOutput.Array json = JsonOutput.array(4, ignored -> {});
         final Runnable callback = dependencies().normal(Runnable.class);
 
         callback.run();

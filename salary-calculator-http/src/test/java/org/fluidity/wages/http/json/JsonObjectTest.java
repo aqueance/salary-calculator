@@ -12,7 +12,7 @@ public class JsonObjectTest extends Simulator {
     public void testBooleanEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Object json = JsonStream.object(64, value::append);
+        final JsonOutput.Object json = JsonOutput.object(64, value::append);
 
         json.add("a", true);
         json.add("b", false);
@@ -26,7 +26,7 @@ public class JsonObjectTest extends Simulator {
     public void testIntegerEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Object json = JsonStream.object(64, value::append);
+        final JsonOutput.Object json = JsonOutput.object(64, value::append);
 
         json.add("a", 0);
         json.add("b", 1);
@@ -43,7 +43,7 @@ public class JsonObjectTest extends Simulator {
     public void testFloatingPointNumberEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Object json = JsonStream.object(64, value::append);
+        final JsonOutput.Object json = JsonOutput.object(64, value::append);
 
         json.add("a", 0.0);
         json.add("b", 1.0);
@@ -58,7 +58,7 @@ public class JsonObjectTest extends Simulator {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInfinityEncoding() throws Exception {
-        final JsonStream.Object json = JsonStream.object(64, new StringBuilder()::append);
+        final JsonOutput.Object json = JsonOutput.object(64, new StringBuilder()::append);
 
         json.add("a", Double.POSITIVE_INFINITY);
 
@@ -67,7 +67,7 @@ public class JsonObjectTest extends Simulator {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNaNEncoding() throws Exception {
-        final JsonStream.Object json = JsonStream.object(64, new StringBuilder()::append);
+        final JsonOutput.Object json = JsonOutput.object(64, new StringBuilder()::append);
 
         json.add("a", Double.NaN);
 
@@ -78,7 +78,7 @@ public class JsonObjectTest extends Simulator {
     public void testEmptyTextEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Object json = JsonStream.object(64, value::append);
+        final JsonOutput.Object json = JsonOutput.object(64, value::append);
 
         json.add("a", "");
 
@@ -91,7 +91,7 @@ public class JsonObjectTest extends Simulator {
     public void testNullEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Object json = JsonStream.object(64, value::append);
+        final JsonOutput.Object json = JsonOutput.object(64, value::append);
 
         json.missing("a");
 
@@ -104,7 +104,7 @@ public class JsonObjectTest extends Simulator {
     public void testEscapedCharacterEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Object json = JsonStream.object(64, value::append);
+        final JsonOutput.Object json = JsonOutput.object(64, value::append);
 
         json.add("a", "a\"b");
         json.add("b", "a\nb");
@@ -122,7 +122,7 @@ public class JsonObjectTest extends Simulator {
     public void testControlCharacterEncodig() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Object json = JsonStream.object(64, value::append);
+        final JsonOutput.Object json = JsonOutput.object(64, value::append);
 
         json.add("a", "\u0000\u0002\u0080\u0010\u009f");
 
@@ -135,7 +135,7 @@ public class JsonObjectTest extends Simulator {
     public void testClosesAllOpenContainers() throws Exception {
         final StringBuilder value = new StringBuilder();
 
-        final JsonStream.Object json = JsonStream.object(4, value::append);
+        final JsonOutput.Object json = JsonOutput.object(4, value::append);
 
         json.array("a").object().array("b").object().array("c");
 
@@ -146,7 +146,7 @@ public class JsonObjectTest extends Simulator {
 
     @Test
     public void testInvokesCloseCallback() throws Exception {
-        final JsonStream.Object json = JsonStream.object(4, ignored -> {});
+        final JsonOutput.Object json = JsonOutput.object(4, ignored -> {});
         final Runnable callback = dependencies().normal(Runnable.class);
 
         callback.run();

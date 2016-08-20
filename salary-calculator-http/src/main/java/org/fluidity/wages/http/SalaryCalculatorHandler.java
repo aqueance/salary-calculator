@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 import org.fluidity.composition.Component;
 import org.fluidity.wages.SalaryDetails;
 import org.fluidity.wages.csv.SalaryCalculator;
-import org.fluidity.wages.http.json.JsonStream;
+import org.fluidity.wages.http.json.JsonOutput;
 
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -62,9 +62,9 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                 response.putHeader("Content-Type", context.getAcceptableContentType() + "; charset=utf-8");
                 response.setChunked(true);
 
-                final Handler<Future<JsonStream>> logic = future -> {
-                    final JsonStream.Object json = JsonStream.object(16384, response::write);
-                    final JsonStream.Array months = json.array("months");
+                final Handler<Future<Void>> logic = future -> {
+                    final JsonOutput.Object json = JsonOutput.object(16384, response::write);
+                    final JsonOutput.Array months = json.array("months");
 
                     final Consumer<SalaryDetails> printer = new Consumer<SalaryDetails>() {
 
@@ -72,14 +72,14 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                         private LocalDate month;
 
                         // The array of people objects for the current month.
-                        private JsonStream.Array peopleArray;
+                        private JsonOutput.Array peopleArray;
 
                         @Override
                         public void accept(final SalaryDetails details) {
                             if (month == null || !details.month.equals(month)) {
                                 month = details.month;
 
-                                final JsonStream.Object monthObject = months.object();
+                                final JsonOutput.Object monthObject = months.object();
 
                                 monthObject.add("year", month.getYear());
                                 monthObject.add("month", month.getMonthValue());
@@ -87,7 +87,7 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                                 peopleArray = monthObject.array("people");
                             }
 
-                            final JsonStream.Object peopleObject = peopleArray.object();
+                            final JsonOutput.Object peopleObject = peopleArray.object();
 
                             peopleObject.add("id", details.personId);
                             peopleObject.add("name", details.personName);
@@ -101,9 +101,9 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                         calculator.process(new InputStreamReader(new ByteArrayInputStream(buffer.getBytes()), encoding), printer);
                     } catch (final Exception error) {
                         json.add("error", error.getMessage());
+                    } finally {
+                        json.close(response::end);
                     }
-
-                    json.close(response::end);
 
                     future.complete();
                 };
