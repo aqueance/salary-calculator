@@ -1,7 +1,7 @@
 package org.fluidity.wages.http.json;
 
 /**
- * TODO: javadoc...
+ * A JSON container, which is an abstract super type for JSON object and JSON array.
  */
 @SuppressWarnings("WeakerAccess")
 abstract class JsonOutputContainer implements JsonOutput.Stream {
@@ -17,6 +17,9 @@ abstract class JsonOutputContainer implements JsonOutput.Stream {
 
     // Set when there at least one value has been added to this container.
     private boolean compound;
+
+    // Set when this contains is closed and no further addition is allowed thereto.
+    private boolean closed;
 
     /**
      * Creates a new JSON container. The characters that open and close the container are specified here.
@@ -49,6 +52,10 @@ abstract class JsonOutputContainer implements JsonOutput.Stream {
      * will also be output if this is not the first item added to this container.
      */
     protected final void appended() {
+        if (closed) {
+            throw new IllegalStateException("This container has been closed");
+        }
+
         if (openChild != null) {
             openChild.close();
         }
@@ -62,6 +69,10 @@ abstract class JsonOutputContainer implements JsonOutput.Stream {
 
     @Override
     public final void close(final Runnable callback) {
+        if (closed) {
+            throw new IllegalStateException("This container has been closed");
+        }
+
         if (openChild != null) {
             openChild.close();
         }
@@ -75,6 +86,8 @@ abstract class JsonOutputContainer implements JsonOutput.Stream {
         if (parent == null) {
             buffer.flush();
         }
+
+        closed = true;
 
         if (callback != null) {
             callback.run();
@@ -103,7 +116,7 @@ abstract class JsonOutputContainer implements JsonOutput.Stream {
      * @return a new JSON array; never <code>null</code>.
      */
     protected final JsonOutput.Array _array() {
-        final JsonOutput.Array array = new JsonOutputArray(this, buffer);
+        final JsonOutputArray array = new JsonOutputArray(this, buffer);
         openChild = array;
         return array;
     }

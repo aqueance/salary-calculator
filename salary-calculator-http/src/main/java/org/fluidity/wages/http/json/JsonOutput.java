@@ -9,7 +9,11 @@ import org.fluidity.foundation.Utility;
  * their respective methods to set properties or add elements thereto. When done, make sure to invoke {@link JsonOutput.Stream#close()} or {@link
  * JsonOutput.Stream#close(Runnable)} on the root object; those methods on intermediate objects or arrays are optional and might not do anything.
  * <p>
- * *NOTE*: This implementation allows duplicate keys to be set in the same JSON object. The JSON specification allows duplicate keys, so that is valid behavior.
+ * Intermediate containers, i.e., {@link JsonOutput.Object} and {@link JsonOutput.Array} instances, are automatically closed when a new property or item is
+ * added, respectively, to their parent container.
+ * <p>
+ * *NOTE*: This implementation allows duplicate keys to be set in the same JSON object. The JSON specification allows duplicate keys, so that is valid
+ * behavior.
  */
 @SuppressWarnings("WeakerAccess")
 public final class JsonOutput extends Utility {
@@ -24,7 +28,7 @@ public final class JsonOutput extends Utility {
      *
      * @return a new object; never <code>null</code>.
      */
-    public static Object object(final int buffer, final Consumer<String> consumer) {
+    public static Object.Root object(final int buffer, final Consumer<String> consumer) {
         return new JsonOutputObject(null, buffered(consumer, buffer));
     }
 
@@ -36,7 +40,7 @@ public final class JsonOutput extends Utility {
      *
      * @return a new object; never <code>null</code>.
      */
-    public static Array array(final int buffer, final Consumer<String> consumer) {
+    public static Array.Root array(final int buffer, final Consumer<String> consumer) {
         return new JsonOutputArray(null, buffered(consumer, buffer));
     }
 
@@ -55,7 +59,7 @@ public final class JsonOutput extends Utility {
     /**
      * A JSON array emitter.
      */
-    public interface Array extends Stream {
+    public interface Array {
 
         /**
          * Adds a new given value to this container.
@@ -101,12 +105,17 @@ public final class JsonOutput extends Utility {
          * Adds a new JSON array to this container.
          */
         Array array();
+
+        /**
+         * A JSON root array. When finished outputting JSON, one of the {@link Stream} methods must be called.
+         */
+        interface Root extends Array, Stream {}
     }
 
     /**
      * A JSON object emitter.
      */
-    public interface Object extends Stream {
+    public interface Object {
 
         /**
          * Sets the named property to the given value in this container.
@@ -160,6 +169,11 @@ public final class JsonOutput extends Utility {
          * @param name the name of the property
          */
         Array array(String name);
+
+        /**
+         * A JSON root object. When finished outputting JSON, one of the {@link Stream} methods must be called.
+         */
+        interface Root extends Object, Stream {}
     }
 
     /**

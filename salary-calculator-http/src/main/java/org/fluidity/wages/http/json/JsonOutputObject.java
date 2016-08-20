@@ -1,6 +1,6 @@
 package org.fluidity.wages.http.json;
 
-final class JsonOutputObject extends JsonOutputContainer implements JsonOutput.Object {
+final class JsonOutputObject extends JsonOutputContainer implements JsonOutput.Object.Root {
 
     /**
      * Creates a new instance.

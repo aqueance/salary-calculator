@@ -63,7 +63,7 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                 response.setChunked(true);
 
                 final Handler<Future<Void>> logic = future -> {
-                    final JsonOutput.Object json = JsonOutput.object(16384, response::write);
+                    final JsonOutput.Object.Root json = JsonOutput.object(16384, response::write);
                     final JsonOutput.Array months = json.array("months");
 
                     final Consumer<SalaryDetails> printer = new Consumer<SalaryDetails>() {
