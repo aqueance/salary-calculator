@@ -41,7 +41,6 @@ final class SalaryCalculatorServer implements Application {
     }
 
     public void run(final String... arguments) {
-        final String host = "localhost";        // hard-coded for now, as this is only a demo
         final int port;
 
         try {
@@ -53,9 +52,9 @@ final class SalaryCalculatorServer implements Application {
         final Router router = router(vertx);
         final HttpServer server = server(vertx);
 
-        server.requestHandler(router::accept).listen(port, host);
+        server.requestHandler(router::accept).listen(port);
 
-        log.info("Server listening on http://%s:%d", host, port);
+        log.info("Server listening on port %d", port);
     }
 
     private HttpServer server(final Vertx vertx) {
@@ -80,13 +79,5 @@ final class SalaryCalculatorServer implements Application {
         });
 
         return router;
-    }
-
-    private int integerArgument(final String[] arguments, final int index, final int defaultValue) {
-        try {
-            return arguments.length > index ? Integer.parseInt(arguments[index]) : defaultValue;
-        } catch (final NumberFormatException error) {
-            throw new IllegalArgumentException(String.format("Expected a number: %s", arguments[index]));
-        }
     }
 }
