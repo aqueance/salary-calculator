@@ -41,6 +41,7 @@
             <type>pom</type>
         </dependency>
 
+        <!-- Comment out this dependency to see the dependency injection container initialization logs -->
         <dependency>
             <groupId>${fluid.tools.group.id}</groupId>
             <artifactId>logging-sink-impl</artifactId>
