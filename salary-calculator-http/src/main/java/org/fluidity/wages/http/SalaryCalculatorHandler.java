@@ -16,70 +16,83 @@
 
 package org.fluidity.wages.http;
 
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.time.LocalDate;
 import java.util.function.Consumer;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.fluidity.composition.Component;
 import org.fluidity.wages.SalaryDetails;
 import org.fluidity.wages.csv.SalaryCalculator;
 import org.fluidity.wages.http.json.JsonOutput;
 
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.RoutingContext;
+import org.apache.commons.fileupload.FileItemIterator;
+import org.apache.commons.fileupload.FileItemStream;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 
 /**
- * A Vert.x web route handler factory for a CSV upload and salary processing thereof.
- * <p>
- * The salary calculation is blocking, so this factory takes a {@link Vertx}
- * instance and returns the actual route handler that uses it to invoke blocking operations.
+ * A Jetty handler for a CSV upload and salary processing thereof.
  */
 @Component(api = SalaryCalculatorHandler.class)
-final class SalaryCalculatorHandler implements Handler<RoutingContext> {
+final class SalaryCalculatorHandler extends AbstractHandler {
 
-    private final Vertx vertx;
+    private static final String CHARSET_PARAM = "charset=";
+    private static final int CHARSET_PARAM_LENGTH = CHARSET_PARAM.length();
+
     private final SalaryCalculator calculator;
 
-    SalaryCalculatorHandler(final VertxInstance vertx, final SalaryCalculator calculator) {
-        this.vertx = vertx.get();
+    SalaryCalculatorHandler(final SalaryCalculator calculator) {
         this.calculator = calculator;
     }
 
     @Override
-    public void handle(final RoutingContext context) {
-        final HttpServerRequest request = context.request();
-        final HttpServerResponse response = context.response();
+    public void handle(final String uri, final Request control, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException {
+        final HttpMethod method = HttpMethod.fromString(request.getMethod());
 
-        request.setExpectMultipart(true);
-        request.uploadHandler(upload -> {
-            final Buffer buffer = Buffer.buffer();
+        if (method != HttpMethod.POST) {
+            response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            response.addHeader("Allow", "POST");
+        } else {
+            try {
+                final ServletFileUpload upload = new ServletFileUpload();
 
-            upload.exceptionHandler(error -> response.end("upload failed: " + error.getMessage()));
+                final FileItemIterator files = upload.getItemIterator(request);
 
-            upload.endHandler(ignored -> {
-                final Charset encoding;
+                if (!files.hasNext()) {
+                    throw new FileUploadException("no file uploaded");
+                } else {
+                    final FileItemStream file = files.next();
 
-                try {
-                    final String charset = upload.charset();
-                    encoding = charset != null ? Charset.forName(charset) : StandardCharsets.UTF_8;
-                } catch (final UnsupportedCharsetException error) {
-                    throw new IllegalArgumentException("unknown encoding: " + upload.charset());
-                }
+                    final String contentType = file.getContentType();
+                    final int cs = contentType.indexOf(CHARSET_PARAM);
+                    final String charset = cs < 0 ? null : contentType.substring(cs + CHARSET_PARAM_LENGTH);
 
-                response.putHeader("Content-Type", context.getAcceptableContentType() + "; charset=utf-8");
-                response.setChunked(true);
+                    final Charset encoding;
 
-                final Handler<Future<Void>> logic = future -> {
-                    final JsonOutput.Object.Root json = JsonOutput.object(16384, response::write);
+                    try {
+                        encoding = charset != null ? Charset.forName(charset) : StandardCharsets.UTF_8;
+                        upload.setHeaderEncoding(encoding.name());
+                    } catch (final UnsupportedCharsetException error) {
+                        throw new IllegalArgumentException("unknown encoding: " + charset);
+                    }
+
+                    response.setContentType("application/json; charset=utf-8");
+
+                    final PrintWriter output = response.getWriter();
+
+                    final JsonOutput.Object.Root json = JsonOutput.object(16384, output::write);
                     final JsonOutput.Array months = json.array("months");
 
                     final Consumer<SalaryDetails> printer = new Consumer<SalaryDetails>() {
@@ -114,20 +127,16 @@ final class SalaryCalculatorHandler implements Handler<RoutingContext> {
                     // The actual business logic.
 
                     try {
-                        calculator.process(new InputStreamReader(new ByteArrayInputStream(buffer.getBytes()), encoding), printer);
+                        calculator.process(new InputStreamReader(file.openStream(), encoding), printer);
                     } catch (final Exception error) {
                         json.add("error", error.getMessage());
                     } finally {
-                        json.close(response::end);
+                        json.close();
                     }
-
-                    future.complete();
-                };
-
-                vertx.executeBlocking(logic, null);
-            });
-
-            upload.handler(buffer::appendBuffer);
-        });
+                }
+            } catch (final FileUploadException e) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            }
+        }
     }
 }

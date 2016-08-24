@@ -16,15 +16,21 @@
 
 package org.fluidity.wages.http;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.fluidity.composition.Component;
-import org.fluidity.composition.spi.ContainerTermination;
 import org.fluidity.deployment.cli.Application;
 import org.fluidity.foundation.Log;
 
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.Router;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 
 /**
  * An HTTP server that calculates salaries from time sheets, and exposes its own HTML client at "/".
@@ -34,29 +40,23 @@ import io.vertx.ext.web.Router;
 final class SalaryCalculatorServer implements Application {
 
     static final int DEFAULT_PORT = 8080;
+    static final String CALCULATOR_URI = "/calculate";
 
     private final Log log;
-    private final Vertx vertx;
-    private final ResourceHandler resources;
+
+    // Computes salary from an uploaded CSV file.
     private final SalaryCalculatorHandler calculator;
 
-    SalaryCalculatorServer(final VertxInstance vertx,
-                           final ResourceHandler resources,
-                           final SalaryCalculatorHandler calculator,
-                           final ContainerTermination stopping,
-                           final Log<SalaryCalculatorServer> log) {
-        this.vertx = vertx.get();
+    // Serves the static files from src/main/resources/webroot that comprise the HTML client.
+    private final ResourceHandler resources;
+
+    SalaryCalculatorServer(final ResourceHandler resources, final SalaryCalculatorHandler calculator, final Log<SalaryCalculatorServer> log) {
         this.resources = resources;
         this.calculator = calculator;
         this.log = log;
-
-        stopping.add(() -> {
-            this.vertx.close();
-            log.info("Server stopped");
-        });
     }
 
-    public void run(final String... arguments) {
+    public void run(final String... arguments) throws Exception {
         final int port;
 
         try {
@@ -65,35 +65,30 @@ final class SalaryCalculatorServer implements Application {
             throw new IllegalArgumentException(String.format("Expected a number: %s", arguments[0]));
         }
 
-        final Router router = router(vertx);
-        final HttpServer server = server(vertx);
+        final Server server = new Server(port);
 
-        server.requestHandler(router::accept).listen(port);
+        server.setStopAtShutdown(true);
+        server.setStopTimeout(TimeUnit.SECONDS.toMillis(1));
 
-        log.info("Server listening on port %d", port);
+        server.setHandler(router());
+
+        server.start();
+        server.join();
+
+        log.info("Server listening on port %d", server.getURI());
     }
 
-    private HttpServer server(final Vertx vertx) {
-        return vertx.createHttpServer();
-    }
-
-    private Router router(final Vertx vertx) {
-        final Router router = Router.router(vertx);
-
-        // Computes salary from an uploaded CSV file.
-        router.post("/calculate").produces("application/json").handler(calculator);
-
-        // Serves the static files from src/main/resources/webroot that comprise the HTML client.
-        router.get().handler(resources);
-
-        // Prevents HTML body to be sent back by Vert.x on errors (Mithril chokes on that).
-        router.route().handler(context -> {
-            final HttpServerResponse response = context.response();
-
-            response.setStatusCode(404);
-            response.end();
-        });
-
-        return router;
+    private Handler router() {
+        return new AbstractHandler() {
+            @Override
+            public void handle(final String uri,
+                               final Request control,
+                               final HttpServletRequest request,
+                               final HttpServletResponse response) throws IOException, ServletException {
+                final Handler handler = uri.equals(CALCULATOR_URI) ? calculator : resources;
+                handler.handle(uri, control, request, response);
+                control.setHandled(true);
+            }
+        };
     }
 }

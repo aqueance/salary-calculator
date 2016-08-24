@@ -23,22 +23,25 @@ import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.fluidity.composition.Component;
 import org.fluidity.foundation.ClassLoaders;
 import org.fluidity.foundation.IOStreams;
+import org.fluidity.foundation.Strings;
 
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.RoutingContext;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 
 /**
- * Serves static resources from /webroot
+ * Serves static resources from <code>/webroot</code>.
  */
 @Component(api = ResourceHandler.class)
-class ResourceHandler implements Handler<RoutingContext> {
+class ResourceHandler extends AbstractHandler {
 
     private static final int CHUNK_SIZE = 16384;
     private static final Map<String, String> MIME_TYPES = new HashMap<>();
@@ -58,62 +61,60 @@ class ResourceHandler implements Handler<RoutingContext> {
         MIME_TYPES.put("svg", "image/svg+xml");
     }
 
-    private final Vertx vertx;
     private final CacheSupport caching;
 
-    public ResourceHandler(final VertxInstance vertx, final CacheSupport caching) {
-        this.vertx = vertx.get();
+    public ResourceHandler(final CacheSupport caching) {
         this.caching = caching;
 
         URLConnection.setFileNameMap(fileName -> MIME_TYPES.get(fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase()));
     }
 
     @Override
-    public void handle(final RoutingContext context) {
-        final HttpServerRequest request = context.request();
-        final HttpServerResponse response = context.response();
-
-        final String uri = request.uri();
+    public void handle(final String uri, final Request control, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException {
         final String query = WEBROOT + (uri.equals("/") ? INDEX_HTML : uri);
 
         final int qm = query.indexOf('?');
         final String path = qm < 0 ? query : query.substring(1, qm);
 
-        final URL resource = ClassLoaders.findResource(getClass(), path);
+        final URL url = ClassLoaders.findResource(getClass(), path);
+        final HttpMethod method = HttpMethod.fromString(request.getMethod());
 
-        if (resource == null) {
-            context.next();
+        if (url == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        } else if (method != HttpMethod.GET && method != HttpMethod.HEAD) {
+            response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            response.addHeader("Allow", "GET, HEAD");
         } else {
-            try {
-                final URLConnection connection = resource.openConnection();
+            final ServletOutputStream output = response.getOutputStream();
 
-                if (!caching.handle(connection, context)) {
-                    final String contentType = connection.getContentType();
+            try {
+                final URLConnection resource = url.openConnection();
+
+                if (!caching.handled(resource, request, response)) {
+                    final String contentType = resource.getContentType();
                     assert contentType != null : path;
 
-                    final int contentLength = connection.getContentLength();
+                    final int contentLength = resource.getContentLength();
 
-                    response.putHeader("Content-Type", contentType.startsWith("text/") ? contentType + "; charset=utf-8" : contentType);
-                    response.putHeader("Content-Length", String.valueOf(contentLength));
+                    if (contentType.startsWith("text/")) {
+                        response.setCharacterEncoding(Strings.UTF_8.name());
+                    }
 
-                    vertx.executeBlocking(future -> {
-                        try (final InputStream stream = connection.getInputStream()) {
-                            IOStreams.send(stream,
-                                           new byte[CHUNK_SIZE],
-                                           (bytes, from, count) -> response.write(Buffer.buffer(count).appendBytes(bytes, from, count)));
+                    response.setContentType(contentType);
+                    response.setContentLength(contentLength);
+
+                    if (HttpMethod.GET == method) {
+                        try (final InputStream stream = resource.getInputStream()) {
+                            IOStreams.send(stream, new byte[CHUNK_SIZE], output::write);
                         } catch (final IOException error) {
-                            response.setStatusCode(500);
-                            response.end(error.getMessage());
-                        } finally {
-                            response.end();
-
-                            future.complete();
+                            // ignored: client disconnected or not reachable for some other reason
                         }
-                    }, null);
+                    }
                 }
             } catch (final IOException error) {
-                response.setStatusCode(500);
-                response.end(error.getMessage());
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.setContentType("text/plain");
+                output.write(error.getMessage().getBytes(Strings.UTF_8));
             }
         }
     }

@@ -4,13 +4,12 @@ This is a small coding exercise for an unspecified company as part of the
 recruitment process. The exact specifications of the taks will, therefore,
 remain undisclosed.
 
-This is a Java based project that uses [Vert.x-Web] for HTTP, [Mithril] for
+This is a Java based project that uses [Jetty] for HTTP, [Mithril] for
 UI, [Fluid Tools] for packaging and dependency injection, and [Maven] to
 build.
 
   [Maven]: https://maven.apache.org/
-  [Vert.x]: http://vertx.io/
-  [Vert.x-Web]: http://vertx.io/docs/vertx-web/java/
+  [Jetty]: http://www.eclipse.org/jetty/
   [Mithril]: http://mithril.js.org/
   [Fluid Tools]: https://github.com/aqueance/fluid-tools
  
@@ -84,23 +83,22 @@ duplication, which to me is a good thing, although as the author of
 [Fluid Tools] I may be biased, or even blind to the complexity that many small
 modules may lead to in practice.
 
-As to the second goal, [Vert.x-Web] allowed me to make an event-looped web
-server in Java, while [Mithril] allowed me to make an HTML UI strictly in
-JavaScript, with HTML only providing a bare wire-frame thereto. Both of these
-I am very happy about.
+As to the second goal, [Mithril] allowed me to make an HTML UI strictly in
+JavaScript, with HTML only providing a bare wire-frame thereto, while [Jetty]
+version 9.3+ gave me [highly efficient](https://webtide.com/eat-what-you-kill/)
+HTTP processing, both of which I am very happy about.
 
 In any case, the result is a self-contained command line tool that is about
-*380 KB*, and a self-contained online tool that is about *5 MB*.
+**380 KB**, and a self-contained online tool that is about **2.3 MB**.
 
 In the latter, in addition to the client assets, much of the space is taken up
-by the embedded web container, which I'm not so happy about. [Vert.x] tries to
-do much more than just being an excellent web server – and not in a modular
-way, apparently.
+by the embedded web container, so the size of the executable is not bad.
 
-I could have used the simple HTTP server
-[built in the JRE](http://stackoverflow.com/a/3732328) instead of [Vert.x],
-and that would have cut down the size of the archive significantly, but would
-have deprived me of non-blocking I/O, among other things.
+Originally, I used [Vert.x-Web](http://vertx.io/docs/vertx-web/java/) instead
+of [Jetty], but that was a mistake. It required lower level coding to serve
+the same content, and the size of the executable was about 6.5 MB – almost
+three times as much as with [Jetty]. Apparently, [Vert.x](http://vertx.io/) is
+something else than a web server.
 
 ## Technical Debt
 
